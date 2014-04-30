@@ -13,7 +13,7 @@ trait ZNode {
   override def hashCode = path.hashCode
   override def equals(other: Any) = other match {
     case z @ ZNode(_) => z.hashCode == hashCode
-      case _ => false
+    case _ => false
   }
   override def toString = s"ZNode($path)"
 

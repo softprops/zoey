@@ -3,12 +3,11 @@ package zoey
 import java.util.concurrent.atomic.AtomicReference
 import scala.collection.JavaConverters._
 import scala.concurrent.{ ExecutionContext, Future, Promise }
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import scala.annotation.tailrec
 import org.apache.zookeeper.{ CreateMode, ZooKeeper }
 import org.apache.zookeeper.data.ACL
 import org.apache.zookeeper.ZooDefs.Ids.CREATOR_ALL_ACL
-
 
 trait ZkClient {
   protected [this] val connection: Connector
@@ -30,11 +29,14 @@ trait ZkClient {
   def mode: CreateMode = CreateMode.PERSISTENT
 }
 
-object ZKClient {
+object ZkClient {
   def apply(
-    host: String,
-    connectTimeout: Option[Duration],
-    sessionTimeout: Duration)(implicit ec: ExecutionContext): ZkClient = new ZkClient {
-      val connection = new NativeConnector(host, connectTimeout, sessionTimeout)
-    }
+    host: String = "0.0.0.0:2181",
+    connectTimeout: Option[FiniteDuration] = None,
+    sessionTimeout: FiniteDuration = 4.seconds)(
+    implicit ec: ExecutionContext): ZkClient =
+      new ZkClient {
+        val connection = new NativeConnector(
+          host, connectTimeout, sessionTimeout)
+      }
 }

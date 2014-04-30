@@ -6,7 +6,7 @@ import org.apache.zookeeper.ZooKeeper
 import scala.annotation.tailrec
 
 trait Connector {
-  private[this] val listeners =
+  protected[this] val listeners =
     new AtomicReference[List[Connector.EventHandler]](Nil)
 
   // todo event broker for session events
