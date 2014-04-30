@@ -17,20 +17,23 @@ trait AsyncCallbackPromise[T] {
   def future: Future[T] = promise.future
 }
 
-class StringCallbackPromise extends AsyncCallbackPromise[String] with AsyncCallback.StringCallback {
+class StringCallbackPromise extends AsyncCallbackPromise[String]
+  with AsyncCallback.StringCallback {
   def processResult(rc: Int, path: String, ctx: AnyRef, name: String) {
     process(rc, path) { name }
   }
 }
 
-class UnitCallbackPromise extends AsyncCallbackPromise[Unit] with AsyncCallback.VoidCallback {
+class UnitCallbackPromise extends AsyncCallbackPromise[Unit]
+  with AsyncCallback.VoidCallback {
   def processResult(rc: Int, path: String, ctx: AnyRef) {
     process(rc, path) { Unit }
   }
 }
 
-class ExistsCallbackPromise(znode: ZNode) extends AsyncCallbackPromise[ZNode.Exists]
-    with AsyncCallback.StatCallback {
+class ExistsCallbackPromise(znode: ZNode)
+  extends AsyncCallbackPromise[ZNode.Exists]
+  with AsyncCallback.StatCallback {
   def processResult(rc: Int, path: String, ctx: AnyRef, stat: Stat) {
     process(rc, path) {
       znode(stat)
@@ -38,8 +41,9 @@ class ExistsCallbackPromise(znode: ZNode) extends AsyncCallbackPromise[ZNode.Exi
   }
 }
 
-class ChildrenCallbackPromise(znode: ZNode) extends AsyncCallbackPromise[ZNode.Children]
-    with AsyncCallback.Children2Callback {
+class ChildrenCallbackPromise(znode: ZNode)
+  extends AsyncCallbackPromise[ZNode.Children]
+  with AsyncCallback.Children2Callback {
   def processResult(rc: Int, path: String, ctx: AnyRef, children: JList[String], stat: Stat) {
     process(rc, path) {
       znode(stat, children.asScala.toSeq)
@@ -47,8 +51,9 @@ class ChildrenCallbackPromise(znode: ZNode) extends AsyncCallbackPromise[ZNode.C
   }
 }
 
-class DataCallbackPromise(znode: ZNode) extends AsyncCallbackPromise[ZNode.Data]
-    with AsyncCallback.DataCallback {
+class DataCallbackPromise(znode: ZNode)
+  extends AsyncCallbackPromise[ZNode.Data]
+  with AsyncCallback.DataCallback {
   def processResult(rc: Int, path: String, ctx: AnyRef, bytes: Array[Byte], stat: Stat) {
     process(rc, path) {
       znode(stat, bytes)
