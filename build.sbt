@@ -12,4 +12,4 @@ crossScalaVersions := Seq("2.10.4", "2.11.0")
 
 scalaVersion := crossScalaVersions.value.head
 
-
+initialCommands := "import scala.concurrent.ExecutionContext.Implicits.global, zoey._; val c = ZkClient()"

@@ -7,6 +7,7 @@ import org.apache.zookeeper.data.{ ACL, Stat }
 import scala.util.{ Failure, Try }
 import scala.collection.JavaConverters._
 
+// http://zookeeper.apache.org/doc/r3.4.5/api/index.html?org/apache/zookeeper/ZooKeeper.html
 trait ZNode {
   val path: String
   protected [zoey] val zkClient: ZkClient
@@ -54,6 +55,7 @@ trait ZNode {
     val creatingPath = child map { "%s/%s".format(path, _) } getOrElse path
     zkClient.retrying { zk =>
       val result = new StringCallbackPromise
+      println(s"creating node $creatingPath with data $data acls $acls mode $mode")
       zk.create(creatingPath, data, acls.asJava, mode, result, null)
       result.future map { newPath => zkClient(newPath) }
     }
