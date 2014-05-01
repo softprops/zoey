@@ -18,8 +18,8 @@ trait ZkServer {
     path.deleteOnExit()
     val server = new ZooKeeperServer(path, path, tickTime)
     new NIOServerCnxnFactory {
-     configure(host, maxConnections)
-     startup(server)
+      configure(host, maxConnections)
+      startup(server)
     }
     server
   }  
