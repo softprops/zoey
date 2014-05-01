@@ -9,10 +9,12 @@ import java.net.InetSocketAddress
 
 /** provides access to an in memory zk server on the fly */
 trait ZkServer {
-  def tickTime = ZooKeeperServer.DEFAULT_TICK_TIME
-  def maxConnections = 100
-  def server(host: InetSocketAddress = new InetSocketAddress(0)) = {
+  def server(
+    host: InetSocketAddress = new InetSocketAddress(0),
+    maxConnections: Int = 100,
+    tickTime: Int = ZooKeeperServer.DEFAULT_TICK_TIME) = {
     val path = File.createTempFile("zk-server-", null)
+    path.deleteOnExit()
     val server = new ZooKeeperServer(path, path, tickTime)
     new NIOServerCnxnFactory {
      configure(host, maxConnections)
