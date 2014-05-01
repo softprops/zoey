@@ -89,7 +89,6 @@ object NativeConnector {
 
     def release()(implicit ec: ExecutionContext): Future[Unit] = Future {
       zookeeper.foreach { zk =>
-        println("releasing zk. l8tr.")
         zk.close()
         zookeeper = None
         releasePromise.success(())
