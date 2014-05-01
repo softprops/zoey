@@ -8,7 +8,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class ZkClientSpec extends FunSpec with BeforeAndAfterAll with ZkServer {
   val host = new InetSocketAddress(0)
-  val svr = server()
+  val svr = server(host)
 
   describe("ZkClient") {
     it ("should work") {
