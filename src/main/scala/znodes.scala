@@ -55,7 +55,6 @@ trait ZNode {
     val creatingPath = child map { "%s/%s".format(path, _) } getOrElse path
     zkClient.retrying { zk =>
       val result = new StringCallbackPromise
-      println(s"creating node $creatingPath with data $data acls $acls mode $mode")
       zk.create(creatingPath, data, acls.asJava, mode, result, null)
       result.future map { newPath => zkClient(newPath) }
     }
