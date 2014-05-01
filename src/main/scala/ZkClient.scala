@@ -25,7 +25,7 @@ trait ZkClient {
   def onSessionEvent(f: Connector.EventHandler) =
     connection.onSessionEvent(f)
 
-  def release(): Future[Unit] = connection.release()
+  def close(): Future[Unit] = connection.release()
 
   def mode: CreateMode = CreateMode.PERSISTENT
 
