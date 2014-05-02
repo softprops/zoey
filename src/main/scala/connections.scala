@@ -28,18 +28,18 @@ object Connector {
   case class RoundRobin(connectors: Connector*)(
     implicit ec: ExecutionContext) extends Connector {
     private[this] var index = 0
-    protected[this] def nextConnector() = {
-      val i = synchronized {
-        if (index == Int.MaxValue ) {
+    private[this] def incrIndex() =
+      synchronized {
+        if (index == Int.MaxValue) {
           index = 0
         }
         index = index + 1
-        index % connectors.length
+        index
       }
-      connectors(i)
-    }
+    protected[this] def next() =      
+      connectors(incrIndex() % connectors.length)
 
-    def apply(): Future[ZooKeeper] = nextConnector().apply()
+    def apply(): Future[ZooKeeper] = next().apply()
 
     /** Disconnect from all ZooKeeper servers. */
     def release(): Future[Unit] =
