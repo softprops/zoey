@@ -73,7 +73,6 @@ object NativeConnector {
       andThen: (StateEvent, ZooKeeper) => Unit) extends Watcher {
       private [this] val ref = new AtomicReference[ZooKeeper]
       def process(e: WatchedEvent) {
-        println(s"cw rec event $e")
         @tailrec
         def await(zk: ZooKeeper): ZooKeeper =
           if (zk == null) await(ref.get()) else zk
