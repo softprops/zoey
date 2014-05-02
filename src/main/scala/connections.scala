@@ -1,6 +1,6 @@
 package zoey
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import java.util.concurrent.atomic.AtomicReference
 import org.apache.zookeeper.ZooKeeper
 import scala.annotation.tailrec
@@ -24,4 +24,28 @@ trait Connector {
 
 object Connector {
   type EventHandler = PartialFunction[StateEvent, Unit]
+
+  case class RoundRobin(connectors: Connector*)(
+    implicit ec: ExecutionContext) extends Connector {
+    private[this] var index = 0
+    protected[this] def nextConnector() = {
+      val i = synchronized {
+        if (index == Int.MaxValue ) {
+          index = 0
+        }
+        index = index + 1
+        index % connectors.length
+      }
+      connectors(i)
+    }
+
+    def apply(): Future[ZooKeeper] = nextConnector().apply()
+
+    /** Disconnect from all ZooKeeper servers. */
+    def release(): Future[Unit] =
+      Future.sequence {
+        connectors map { _.release() }
+      }.map(_ => Future.successful(()))
+  }
+
 }

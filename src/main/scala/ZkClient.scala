@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 import org.apache.zookeeper.{ CreateMode, ZooKeeper }
 import org.apache.zookeeper.data.ACL
 import org.apache.zookeeper.ZooDefs.Ids.{
-  ANYONE_ID_UNSAFE, AUTH_IDS, CREATOR_ALL_ACL, OPEN_ACL_UNSAFE, READ_ACL_UNSAFE }
+  CREATOR_ALL_ACL, OPEN_ACL_UNSAFE, READ_ACL_UNSAFE }
 
 trait ZkClient {
   protected [this] val connection: Connector
@@ -78,5 +78,16 @@ object ZkClient {
       new ZkClient {
         val connection = new NativeConnector(
           host, connectTimeout, sessionTimeout)
+      }
+
+   def roundRobin(
+     hosts: Seq[String] = "0.0.0.0:2181" :: Nil,
+     connectTimeout: Option[FiniteDuration] = None,
+     sessionTimeout: FiniteDuration = 4.seconds)(
+     implicit ec: ExecutionContext): ZkClient =
+      new ZkClient {
+        val connection = Connector.RoundRobin(hosts.map(
+          new NativeConnector(
+            _, connectTimeout, sessionTimeout)):_*)
       }
 }

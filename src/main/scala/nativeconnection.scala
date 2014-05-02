@@ -55,8 +55,9 @@ case class NativeConnector(
 
 object NativeConnector {
 
-  case class ConnectTimeoutException(connectString: String, timeout: Duration)
-    extends TimeoutException("timeout connecting to %s after %s".format(connectString, timeout))
+  case class ConnectTimeoutException(
+    connectString: String, timeout: Duration) extends TimeoutException(
+      "timeout connecting to %s after %s".format(connectString, timeout))
 
   protected class Connection(
     connectString: String,
@@ -92,10 +93,16 @@ object NativeConnector {
     protected[this] var connectPromise = Promise[ZooKeeper]()
     protected[this] val releasePromise = Promise[Unit]()
 
+    /** if connectTimeout is defined, a secondary future will be scheduled
+     *  to fail at this time. If this failure happens before the connection
+     *  is promise is satisfied, the future returned with be that of the
+     *  failure
+     */
     lazy val connected: Future[ZooKeeper] = connectTimeout.map { to =>
       val prom = Promise[ZooKeeper]()
       val fail = retry.Defaults.timer(
-        to.length, to.unit, prom.failure(ConnectTimeoutException(connectString, to)))
+        to.length, to.unit, prom.failure(
+          ConnectTimeoutException(connectString, to)))
       val success = connectPromise.future
       success.onComplete { case _ => fail.cancel() }
       Future.firstCompletedOf(success :: prom.future :: Nil)
