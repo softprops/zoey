@@ -19,10 +19,8 @@ trait ZkClient {
 
   def apply(path: String): ZNode = ZNode(this, path)
 
-  def apply(): Future[ZooKeeper] = {
-    println(s"retry policy $retryPolicy")
+  def apply(): Future[ZooKeeper] =
     retryPolicy(connection())
-  }
 
   def retried(
     max: Int = 8,

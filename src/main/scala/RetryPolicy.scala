@@ -3,7 +3,7 @@ package zoey
 import org.apache.zookeeper.KeeperException
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
-import java.util.concurrent.atomic.AtomicBoolean
+import scala.util.control.NonFatal
 import retry._
 
 object KeeperConnectionException {
@@ -33,17 +33,47 @@ object RetryPolicy {
     implicit ec: ExecutionContext,
     timer: Timer) extends RetryPolicy {
     def apply[T](op: => Future[T]): Future[T] = {
-      val fail = new AtomicBoolean(false)
-      op.onFailure {
-        case KeeperConnectionException(_) =>
-          fail.getAndSet(true)
-        case e@NativeConnector.ConnectTimeoutException(_, _) =>
-          fail.getAndSet(true)
+      implicit val success = new Success[T](Function.const(true))
+      LenientBackoff(max, delay, base)(() => op)
+    }
+  }
+
+  protected object LenientBackoff extends LenientCountingRetry {
+    def apply[T](
+      max: Int = 8,
+      delay: Duration = 500.millis,
+      base: Int = 2)
+      (promise: () => Future[T])
+      (implicit success: Success[T],
+       timer: Timer,
+       executor: ExecutionContext): Future[T] = {
+        retry(max,
+              promise,
+              success,
+              count => SleepFuture(delay) {
+                LenientBackoff(count,
+                        Duration(delay.length * base, delay.unit),
+                        base)(promise)
+              }.flatMap(identity))
       }
-      implicit val success = new Success[T](
-        _ => fail.getAndSet(false))
-      
-      retry.Backoff(max, delay, base)(() => op)
+  }
+
+
+  protected trait LenientCountingRetry {
+    /** Applies the given function and will retry up to `max` times,
+     until a successful result is produced. */
+    protected def retry[T](
+      max: Int,
+      promise: () => Future[T],
+      success: Success[T],
+      orElse: Int => Future[T])(implicit executor: ExecutionContext): Future[T] = {
+      val fut = promise()
+      fut.flatMap { res =>
+        if (max < 1 || success.predicate(res)) fut
+        else orElse(max - 1)
+      } recoverWith {
+        case NonFatal(e) => if (max < 1) fut else orElse(max - 1)
+      }
     }
   }
 }
