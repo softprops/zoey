@@ -4,6 +4,7 @@ import scala.annotation.tailrec
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.duration.Duration
 import org.apache.zookeeper.{ ZooKeeper, Watcher, WatchedEvent }
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 
 case class NativeConnector(
@@ -34,7 +35,13 @@ case class NativeConnector(
       val c = mkConnection
       connection = Some(c)
       c
-    }.apply()
+    }.apply().recoverWith {
+      case e: NativeConnector.ConnectTimeoutException =>
+        release() flatMap { _ => Future.failed(e) }
+      case e =>
+        println(s"connection issue $e")
+        Future.failed(e)
+    }
 
   def release(): Future[Unit] =
     connection match {
@@ -47,11 +54,16 @@ case class NativeConnector(
 }
 
 object NativeConnector {
+
+  case class ConnectTimeoutException(connectString: String, timeout: Duration)
+    extends TimeoutException("timeout connecting to %s after %s".format(connectString, timeout))
+
   protected class Connection(
     connectString: String,
     connectTimeout: Option[Duration],
     sessionTimeout: Duration,
-    sessionListeners: List[Connector.EventHandler]) {
+    sessionListeners: List[Connector.EventHandler])(
+    implicit val ec: ExecutionContext) {
 
     @volatile protected[this] var zookeeper: Option[ZooKeeper] = None
 
@@ -60,6 +72,7 @@ object NativeConnector {
       andThen: (StateEvent, ZooKeeper) => Unit) extends Watcher {
       private [this] val ref = new AtomicReference[ZooKeeper]
       def process(e: WatchedEvent) {
+        println(s"cw rec event $e")
         @tailrec
         def await(zk: ZooKeeper): ZooKeeper =
           if (zk == null) await(ref.get()) else zk
@@ -79,7 +92,15 @@ object NativeConnector {
     protected[this] var connectPromise = Promise[ZooKeeper]()
     protected[this] val releasePromise = Promise[Unit]()
 
-    lazy val connected: Future[ZooKeeper] = connectPromise.future
+    lazy val connected: Future[ZooKeeper] = connectTimeout.map { to =>
+      val prom = Promise[ZooKeeper]()
+      val fail = retry.Defaults.timer(
+        to.length, to.unit, prom.failure(ConnectTimeoutException(connectString, to)))
+      val success = connectPromise.future
+      success.onComplete { case _ => fail.cancel() }
+      Future.firstCompletedOf(success :: prom.future :: Nil)
+    }.getOrElse(connectPromise.future)
+
     lazy val released: Future[Unit] = releasePromise.future
 
     def apply(): Future[ZooKeeper] = {
