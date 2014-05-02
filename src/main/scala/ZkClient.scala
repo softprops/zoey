@@ -15,12 +15,26 @@ trait ZkClient {
 
   val acl: Seq[ACL] = CREATOR_ALL_ACL.asScala
 
+  val retryPolicy: RetryPolicy = RetryPolicy.None
+
   def apply(path: String): ZNode = ZNode(this, path)
 
-  def apply(): Future[ZooKeeper] = connection()
+  def apply(): Future[ZooKeeper] = {
+    println(s"retry policy $retryPolicy")
+    retryPolicy(connection())
+  }
 
-  def retrying[T](op: ZooKeeper => Future[T])(implicit ec: ExecutionContext): Future[T] =
-    apply().flatMap(op)
+  def retried(
+    max: Int = 8,
+    delay: FiniteDuration = 500.millis,
+    base: Int = 2)(
+    implicit ec: ExecutionContext,
+    timer: retry.Timer) =
+    copy(_retryPolicy = RetryPolicy.Exponential(max, delay, base))
+
+  final def retrying[T](op: ZooKeeper => Future[T])(
+    implicit ec: ExecutionContext): Future[T] =
+    retryPolicy(apply().flatMap(op))
 
   def onSessionEvent(f: Connector.EventHandler) =
     connection.onSessionEvent(f)
@@ -48,10 +62,12 @@ trait ZkClient {
   protected[this] def copy(
     _connector: Connector = connection,
     _acl: Seq[ACL] = acl,
-    _mode: CreateMode = mode) = new ZkClient {
+    _mode: CreateMode = mode,
+    _retryPolicy: RetryPolicy = retryPolicy) = new ZkClient {
     val connection = _connector
     override val acl = _acl
     override val mode = _mode
+    override val retryPolicy = _retryPolicy
   }
 }
 
