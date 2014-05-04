@@ -6,7 +6,7 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.control.NonFatal
 
-class ZkClientSpec extends FunSpec with BeforeAndAfterAll with ZkServer {
+class ZkClientSpec extends FunSpec with BeforeAndAfterAll with testing.ZkServer {
   lazy val svr = server()
 
   describe("ZkClient") {

@@ -49,30 +49,20 @@ object StateEvent {
     val state = KeeperState.ConnectedReadOnly
   }
 
-  object NoSyncConnected extends StateEvent {
-    val state = KeeperState.NoSyncConnected
-  }
-
   object SaslAuthenticated extends StateEvent {
     val state = KeeperState.SaslAuthenticated
   }
 
-  object Unknown extends StateEvent {
-    val state = KeeperState.Unknown
-  }
-
-  def apply(w: WatchedEvent): StateEvent = {
-    w.getState match {
+  // @unchecked because some keeper states are now deprecated ( and not sent from server )
+  def apply(w: WatchedEvent): StateEvent =
+    (w.getState: @unchecked) match {
       case KeeperState.AuthFailed    => AuthFailed
       case KeeperState.SyncConnected => Connected
       case KeeperState.Disconnected  => Disconnected
       case KeeperState.Expired       => Expired
       case KeeperState.ConnectedReadOnly => ConnectedReadOnly
-      case KeeperState.NoSyncConnected => NoSyncConnected
       case KeeperState.SaslAuthenticated => SaslAuthenticated
-      case KeeperState.Unknown => Unknown
     }
-  }
 }
 
 sealed trait NodeEvent {

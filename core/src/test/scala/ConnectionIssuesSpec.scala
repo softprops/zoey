@@ -8,7 +8,7 @@ import retry.Defaults.timer
 import scala.util.control.NonFatal
 import java.net.InetSocketAddress
 
-class ConnectionIssuesSpec extends FunSpec with BeforeAndAfterAll with ZkServer {
+class ConnectionIssuesSpec extends FunSpec with BeforeAndAfterAll with testing.ZkServer {
   val addrs = (2181 to 2183).map(new InetSocketAddress(_))
   lazy val svr = server(addrs.last)
 

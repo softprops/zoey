@@ -1,4 +1,4 @@
-package zoey
+package zoey.testing
 
 import java.io.File
 import org.apache.zookeeper.server.{
@@ -11,14 +11,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 /** provides access to an in memory zk server on the fly */
 trait ZkServer {
-
   trait Server {
     def isRunning: Boolean
     def shutdown(): Unit
     def clientAddr: String
     def save(): Unit
   }
-
   def server(
     host: InetSocketAddress = new InetSocketAddress(2181),
     maxConnections: Int = 100,
