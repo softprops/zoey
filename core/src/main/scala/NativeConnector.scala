@@ -20,8 +20,7 @@ case class NativeConnector(
 
   // register a session event listener for this listener
   onSessionEvent {
-    case e@StateEvent.Expired =>
-      println(s"session expired $e")
+    case StateEvent.Expired =>
       Await.result(release(), Duration.Inf)
     case other => ()
   }
@@ -39,14 +38,13 @@ case class NativeConnector(
       case e: NativeConnector.ConnectTimeoutException =>
         release() flatMap { _ => Future.failed(e) }
       case e =>
-        println(s"connection issue $e")
         Future.failed(e)
     }
 
   def release(): Future[Unit] =
     connection match {
       case None =>
-        Future(())
+        Future.successful(())
       case Some(c) =>
         connection = None
         c.release()

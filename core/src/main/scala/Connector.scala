@@ -9,8 +9,6 @@ trait Connector {
   protected[this] val listeners =
     new AtomicReference[List[Connector.EventHandler]](Nil)
 
-  // todo event broker for session events
-
   def apply(): Future[ZooKeeper]
 
   def release(): Future[Unit]

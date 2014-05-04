@@ -17,8 +17,10 @@ trait ZkClient {
 
   val retryPolicy: RetryPolicy = RetryPolicy.None
 
+  /** @return reference a ZNode by path */
   def apply(path: String): ZNode = ZNode(this, path)
 
+  /** @return a reference to the current connections zookeeper instance */
   def apply(): Future[ZooKeeper] =
     retryPolicy(connection())
 
