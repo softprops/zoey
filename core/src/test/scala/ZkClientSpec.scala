@@ -17,6 +17,8 @@ class ZkClientSpec extends FunSpec with BeforeAndAfterAll with testing.ZkServer 
       future.onFailure {
         case NonFatal(e) => e.printStackTrace
       }
+      val host  = svr.clientAddr.split(":").head
+      val port  = svr.clientAddr.split(":").last.toInt
       assert(Await.result(future, Duration.Inf).path === path)
       zk.close()
     }
