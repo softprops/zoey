@@ -2,6 +2,6 @@
 
 [![Build Status](https://travis-ci.org/softprops/zoey.svg)](https://travis-ci.org/softprops/zoey)
 
-an in progress port of twitters wonderful zookeeper keeper implemented in terms of std library features
+a non-blocking interface to apache zoookeeper fashioned after twitter's wonderful zk client, implemented in terms of scala's standard library features
 
 Doug Tangren (softprops) 2013-2014
