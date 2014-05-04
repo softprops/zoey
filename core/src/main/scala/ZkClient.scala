@@ -43,8 +43,6 @@ trait ZkClient {
 
   def mode: CreateMode = CreateMode.PERSISTENT
 
-  // http://zookeeper.apache.org/doc/r3.4.5/api/index.html?org/apache/zookeeper/ZooKeeper.html
-
   def aclCreatorAll = copy(_acl = CREATOR_ALL_ACL.asScala)
 
   def aclOpenUnsafe = copy(_acl = OPEN_ACL_UNSAFE.asScala)
@@ -72,8 +70,9 @@ trait ZkClient {
 }
 
 object ZkClient {
+  val DefaultHost = "0.0.0.0:2181"
   def apply(
-    host: String = "0.0.0.0:2181",
+    host: String = DefaultHost,
     connectTimeout: Option[FiniteDuration] = None,
     sessionTimeout: FiniteDuration = 4.seconds)(
     implicit ec: ExecutionContext): ZkClient =
@@ -83,7 +82,7 @@ object ZkClient {
       }
 
    def roundRobin(
-     hosts: Seq[String] = "0.0.0.0:2181" :: Nil,
+     hosts: Seq[String] = DefaultHost :: Nil,
      connectTimeout: Option[FiniteDuration] = None,
      sessionTimeout: FiniteDuration = 4.seconds)(
      implicit ec: ExecutionContext): ZkClient =
