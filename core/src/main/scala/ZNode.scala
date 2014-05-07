@@ -33,6 +33,7 @@ trait ZNode extends Paths {
   def withZkClient(zk: ZkClient): ZNode =
     ZNode(zk, path)
 
+  /** creates the current znode reference if it does not exist */
   def create(
     data: Array[Byte] = Array.empty[Byte],
     acls: Seq[ACL]    = zkClient.acl,
@@ -47,7 +48,8 @@ trait ZNode extends Paths {
     }
   }
 
-  def delete(version: Int = 0)
+  /**  deletes the current znode reference and optionally, all its children */
+  def delete(version: Int = 0, recursive: Boolean = false)
    (implicit ec: ExecutionContext): Future[ZNode] =
     zkClient.retrying { zk =>
       val result = new UnitCallbackPromise
@@ -55,6 +57,7 @@ trait ZNode extends Paths {
       result.future map { _ => this }
     }
 
+  /** sets the data associated with the current znode reference for a given version */
   def setData(data: Array[Byte], version: Int)
    (implicit ec: ExecutionContext): Future[ZNode.Data] =
     zkClient.retrying { zk =>
@@ -63,6 +66,7 @@ trait ZNode extends Paths {
       result.future map { _.apply(data) }
     }
 
+  /** flushes channel between process and the leader */
   def sync()(implicit ec: ExecutionContext): Future[ZNode] =
     zkClient.retrying { zk =>
       val result = new UnitCallbackPromise
