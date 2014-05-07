@@ -1,7 +1,7 @@
 package zoey
 
 import scala.concurrent.{ ExecutionContext, Future }
-import org.apache.zookeeper.{ CreateMode, KeeperException, WatchedEvent }
+import org.apache.zookeeper.{ CreateMode, KeeperException, WatchedEvent, ZKUtil }
 import org.apache.zookeeper.common.PathUtils
 import org.apache.zookeeper.data.{ ACL, Stat }
 import scala.util.{ Failure, Try }
@@ -48,14 +48,24 @@ trait ZNode extends Paths {
     }
   }
 
-  /**  deletes the current znode reference and optionally, all its children */
-  def delete(version: Int = 0, recursive: Boolean = false)
+  /**  deletes the current znode reference at a specific version */
+  def delete(version: Int = 0)
    (implicit ec: ExecutionContext): Future[ZNode] =
     zkClient.retrying { zk =>
       val result = new UnitCallbackPromise
       zk.delete(path, version, result, null)
       result.future map { _ => this }
     }
+
+  /** deletes the current znode referece and all of its children,
+   *  and all of their children, and so on */
+  def deleteAll
+    (implicit ec: ExecutionContext): Future[ZNode] =
+      zkClient.retrying { zk =>
+        val result = new UnitCallbackPromise
+        ZKUtil.deleteRecursive(zk, path, result, null)
+        result.future map { _ => this }
+      }
 
   /** sets the data associated with the current znode reference for a given version */
   def setData(data: Array[Byte], version: Int)
