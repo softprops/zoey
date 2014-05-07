@@ -48,17 +48,7 @@ trait ZNode extends Paths {
       zk.create(newPath, data, acls.asJava, mode, result, null)
       result.future.map(zkClient(_)).recoverWith {
         case _: KeeperException.NoNodeException if (parent) =>
-          def mkdirp(target: String, makes: List[String] = Nil): Future[ZNode] =
-            zkClient(target).exists().recoverWith {
-              case _: KeeperException.NoNodeException =>
-                target.take(target.lastIndexOf("/")) match {
-                  case empty if empty.isEmpty =>
-                    Future.sequence((target :: makes).map(zkClient(_).create(acls = acls, mode = mode))).map(_.last)
-                  case parent =>
-                    mkdirp(parent, makes :+ target)
-                }
-            }
-          mkdirp(newPath.take(newPath.lastIndexOf("/"))).flatMap {
+          ZNode.mkdirp(zkClient, newPath.take(newPath.lastIndexOf("/"))).flatMap {
             case _ => create(data, acls, mode, child, false)
           }
       }
@@ -171,6 +161,17 @@ trait ZNode extends Paths {
  * ZNode utilities and return types.
  */
 object ZNode {
+
+  def mkdirp(zk: ZkClient, path: String, makes: List[String] = Nil)(implicit ec: ExecutionContext): Future[ZNode] =
+    zk(path).exists().recoverWith {
+      case _: KeeperException.NoNodeException =>
+        path.take(path.lastIndexOf("/")) match {
+          case empty if empty.isEmpty =>
+            Future.sequence((path :: makes).map(zk(_).create(acls = zk.acl, mode = zk.mode))).map(_.last)
+          case parent =>
+            mkdirp(zk, parent, makes :+ path)
+        }
+    }
 
   /** @return a new ZNode, if the path is invalid
    *  and illegal argument exception will be thrown */
