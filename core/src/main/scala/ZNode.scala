@@ -1,11 +1,12 @@
 package zoey
 
-import scala.concurrent.{ ExecutionContext, Future }
+
 import org.apache.zookeeper.{ CreateMode, KeeperException, WatchedEvent, ZKUtil }
 import org.apache.zookeeper.common.PathUtils
 import org.apache.zookeeper.data.{ ACL, Stat }
-import scala.util.{ Failure, Try }
 import scala.collection.JavaConverters._
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Try }
 
 trait ZNode extends Paths {
   protected [zoey] val zkClient: ZkClient
@@ -38,13 +39,29 @@ trait ZNode extends Paths {
     data: Array[Byte] = Array.empty[Byte],
     acls: Seq[ACL]    = zkClient.acl,
     mode: CreateMode  = zkClient.mode,
-    child: Option[String] = None)
+    child: Option[String] = None,
+    parent: Boolean = false)
    (implicit ec: ExecutionContext): Future[ZNode] = {
     val newPath = child.map("%s/%s".format(path, _)).getOrElse(path)
     zkClient.retrying { zk =>
       val result = new StringCallbackPromise
       zk.create(newPath, data, acls.asJava, mode, result, null)
-      result.future.map(zkClient(_))
+      result.future.map(zkClient(_)).recoverWith {
+        case _: KeeperException.NoNodeException if (parent) =>
+          def mkdirp(target: String, makes: List[String] = Nil): Future[ZNode] =
+            zkClient(target).exists().recoverWith {
+              case _: KeeperException.NoNodeException =>
+                target.take(target.lastIndexOf("/")) match {
+                  case empty if empty.isEmpty =>
+                    Future.sequence((target :: makes).map(zkClient(_).create(acls = acls, mode = mode))).map(_.last)
+                  case parent =>
+                    mkdirp(parent, makes :+ target)
+                }
+            }
+          mkdirp(newPath.take(newPath.lastIndexOf("/"))).flatMap {
+            case _ => create(data, acls, mode, child, false)
+          }
+      }
     }
   }
 

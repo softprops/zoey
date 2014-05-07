@@ -15,10 +15,10 @@ class ZkClientSpec extends FunSpec with BeforeAndAfterAll
   describe("ZkClient") {
     it ("should work") {
       val zk = ZkClient(svr.clientAddr)
-      val path = "/test"
+      val path = "/test/parent/grandparent"
       val future =
         for {
-          parent <- zk.aclOpenUnsafe(path).create()
+          parent <- zk.aclOpenUnsafe(path).create(parent = true)
           foo    <- parent.create(child = Some("foo"))
           bar    <- parent.create(child = Some("bar"))
           kids   <- parent.getChildren()
