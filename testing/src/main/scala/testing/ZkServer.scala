@@ -9,22 +9,17 @@ import java.net.InetSocketAddress
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object Port {
-  def random() = {
-    val s = new java.net.ServerSocket(0)
-    val available = s.getLocalPort
-    s.close()
-    available
-  }
-}
-
-/** provides access to an in memory zk server on the fly */
+/** provides access to in memory zk servers on the fly */
 trait ZkServer {
 
   trait Server {
+    /** @return true, if server is currently running */
     def isRunning: Boolean
+    /** shuts the a server down */
     def shutdown(): Unit
+    /** address a zk client can resolve server from */
     def clientAddr: String
+    /** persists state */
     def save(): Unit
   }
 
@@ -32,8 +27,7 @@ trait ZkServer {
     host: InetSocketAddress = new InetSocketAddress(Port.random),
     maxConnections: Int = 100,
     tickTime: Int = ZooKeeperServer.DEFAULT_TICK_TIME): Server = {
-    //val path = File.createTempFile("zk-server-", null)
-    val path = new File(System getProperty "java.io.tmpdir", "zk-" + UUID.randomUUID())
+    val path = new File(System.getProperty("java.io.tmpdir"), "zk-" + UUID.randomUUID())
     path.deleteOnExit()
     val server = new ZooKeeperServer(path, path, tickTime)
     val fact = ServerCnxnFactory.createFactory()
