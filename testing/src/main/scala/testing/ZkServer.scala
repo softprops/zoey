@@ -9,7 +9,7 @@ import java.net.InetSocketAddress
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-/** provides access to in memory zk servers on the fly */
+/** provides access to in memory standalone zk servers on the fly */
 trait ZkServer {
 
   trait Server {

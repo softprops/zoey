@@ -6,13 +6,18 @@ import org.apache.zookeeper.server.quorum.{
 }
 import java.net.InetSocketAddress
 import java.nio.channels.ServerSocketChannel
-import java.io.File
+import java.io.{ BufferedWriter, File, FileWriter }
 import java.util.{ Properties, UUID }
+import scala.collection.JavaConverters._
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.control.NonFatal
 
 /** provides access to in memory zk server quorum on the fly */
 trait ZkQuorum {
   
   case class Builder(
+    _id: Long = 1,
     _clientAddress: Option[InetSocketAddress] = None,
     _dataDir: Option[File] = None,
     _dataLogDir: Option[File] = None,
@@ -28,8 +33,14 @@ trait ZkQuorum {
     _quorumListenOnAllIPs: Option[Boolean] = None,
     _syncEnabled: Option[Boolean] = None,
     _dynamicConfigFile: Option[File] = None,
-    _standaloneEnabled: Option[Boolean] = None) {
+    _standaloneEnabled: Option[Boolean] = None,
+    // todo: support observer/particpant labels
+    _servers: Map[Long, (InetSocketAddress, Int)] =
+      Map.empty[Long, (InetSocketAddress, Int)]) {
   
+    def id(idx: Long) = copy(_id = idx)
+    def servers(svrs: (Long, (InetSocketAddress, Int))*) =
+      copy(_servers = svrs.toMap)
     def clientAddr(addr: InetSocketAddress) = copy(_clientAddress = Some(addr))
     def dataDir(dir: File) = copy(_dataDir = Some(dir))
     def dataLogDir(dir: File) = copy(_dataLogDir = Some(dir))
@@ -39,7 +50,8 @@ trait ZkQuorum {
       copy(_localSessionsUpgradingEnabled = Some(enabled))
     def tickTime(time: Int) = copy(_tickTime = Some(time))
     def maxConnections(max: Int) = copy(_maxClientCnxns = Some(max))
-    
+    def initLimit(limit: Int) = copy(_initLimit = Some(limit))
+    def syncLimit(limit: Int) = copy(_syncLimit = Some(limit))
     def toMap: Map[String, String] =
       (Map.empty[String, String] ++
        _dataDir.map(("dataDir" -> _.getAbsolutePath)) ++
@@ -58,9 +70,23 @@ trait ZkQuorum {
        _quorumListenOnAllIPs.map(("quorumListenOnAllIPs" -> _.toString)) ++
        _syncEnabled.map(("syncEnabled" -> _.toString)) ++
        _dynamicConfigFile.map(("dynamicConfigFile" -> _.getAbsolutePath)) ++
-       _standaloneEnabled.map(("standaloneEnabled" -> _.toString)))
+       _standaloneEnabled.map(("standaloneEnabled" -> _.toString)) ++
+       _servers.map({
+         case (id, (addr, electPort)) =>
+           (s"server.$id",  addr.getAddress.getHostAddress :: addr.getPort :: electPort :: Nil mkString(":"))
+       }).toMap)
 
     def build: QuorumPeerConfig = new QuorumPeerConfig() {
+      _dataDir.foreach { base =>
+        val myid = new File(base, "myid")
+        if (myid.createNewFile()) {
+          val writer = new BufferedWriter(new FileWriter(myid))
+          writer.write(_id.toString)
+          writer.flush()
+          writer.close()
+        }
+      }
+
       parseProperties(new Properties {
         toMap.foreach {
           case (k, v) => setProperty(k, v)
@@ -70,7 +96,9 @@ trait ZkQuorum {
   }
 
   def defaultBuilder =  {
-    val path = new File(System.getProperty("java.io.tmpdir"), "zk-" + UUID.randomUUID())
+    val path = new File(
+      System.getProperty("java.io.tmpdir"), "zk-" + UUID.randomUUID())
+    path.mkdir()
     path.deleteOnExit()
     Builder()
       .clientAddr(new InetSocketAddress(Port.random))
@@ -78,6 +106,8 @@ trait ZkQuorum {
       .maxConnections(100)
       .dataDir(path)
       .dataLogDir(path)
+      .initLimit(10)
+      .syncLimit(5)
   }
 
   trait Quorum {
@@ -97,15 +127,44 @@ trait ZkQuorum {
         ssField.get(cnxnFactory).asInstanceOf[ServerSocketChannel].close()
         peer.shutdown()
       }
+
+    def awaitStartup: Unit =
+      Option(quorumPeer) match {
+        case None =>
+          Thread.sleep(100)
+          awaitStartup
+        case Some(_) =>
+          println(s"server $quorumPeer started")
+      }
   }
 
-  def quorum(configure: Builder => Builder = identity): Quorum = {    
-    val main = new QuorumMain()
-    val config = configure(defaultBuilder).build
-    main.runFromConfig(config)
+  def quorum(configure: Builder => Builder = identity): Quorum = {
+    val builder = configure(defaultBuilder)
+    val configs = builder._servers.map {
+      case (id, _) =>
+        (id, configure(defaultBuilder).id(id).build)
+    }
+    
     new Quorum {
-      def shutdown() = main.shutdown()
-      def clientAddr: String = config.getClientPortAddress.toString
+      val mains = configs.map {
+        case (id, _) => (id, new QuorumMain)
+      }.toMap
+      val runs = Future.sequence(configs.map {
+        case (id, cfg) =>
+          Future {
+            mains(id).runFromConfig(cfg)
+          }
+      })
+      mains.foreach { case (_, main) => main.awaitStartup }
+      runs.onFailure {
+        case NonFatal(e) =>
+          System.err.println("failed to start server $e")
+      }
+      def shutdown() = mains.foreach { case (_, main) => main.shutdown() }
+      def clientAddr: String = configs.map {
+        case (_, cfg) =>
+          s"${cfg.getClientPortAddress.getAddress.getHostAddress}:${cfg.getClientPortAddress.getPort}"
+      }.mkString(",")
     }
   }
 }
