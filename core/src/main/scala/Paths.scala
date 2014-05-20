@@ -1,10 +1,11 @@
 package zoey
 
 trait Paths {
+
   def path: String
 
   lazy val name: String = path.lastIndexOf('/') match {
-    case i if (i == -1 || i == path.length - 1) => ""
+    case i if i == -1 || i == path.length - 1 => ""
     case i => path.substring(i + 1)
   }
 
