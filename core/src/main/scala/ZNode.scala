@@ -161,6 +161,16 @@ trait ZNode extends Paths {
  * ZNode utilities and return types.
  */
 object ZNode {
+  private[this] val SeqName = """(.+)-(\d+)""".r
+  implicit val sequentialOrder: Ordering[ZNode] =
+    Ordering.by {
+      node => (node.parentPath, node.name match {
+        case SeqName(name, counter) =>
+          (name, counter.toInt)
+        case name =>
+          (name, 0)
+      })
+    }
 
   def mkdirp(zk: ZkClient, path: String, makes: List[String] = Nil)(implicit ec: ExecutionContext): Future[ZNode] =
     zk(path).exists().recoverWith {
@@ -175,7 +185,7 @@ object ZNode {
 
   /** @return a new ZNode, if the path is invalid
    *  and illegal argument exception will be thrown */
-  def apply(zk: ZkClient, _path: String) = new ZNode {
+  def apply(zk: ZkClient, _path: String): ZNode = new ZNode {
     PathUtils.validatePath(_path)
     protected[zoey] val zkClient = zk
     val path = _path
