@@ -42,7 +42,7 @@ trait ZNode extends Paths {
     child: Option[String] = None,
     parent: Boolean = false)
    (implicit ec: ExecutionContext): Future[ZNode] = {
-    val newPath = child.map("%s/%s".format(path, _)).getOrElse(path)
+    val newPath = child.map(childPath).getOrElse(path)
     zkClient.retrying { zk =>
       val result = new StringCallbackPromise
       zk.create(newPath, data, acls.asJava, mode, result, null)
