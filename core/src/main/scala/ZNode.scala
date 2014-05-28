@@ -69,9 +69,11 @@ trait ZNode extends Paths {
   def deleteAll
     (implicit ec: ExecutionContext): Future[ZNode] =
       zkClient.retrying { zk =>
-        val result = new UnitCallbackPromise
-        ZKUtil.deleteRecursive(zk, path, result, null)
-        result.future map { _ => this }
+        Future.sequence(ZKUtil.listSubTreeBFS(zk, path).asScala.reverse.map { del =>
+          val result = new UnitCallbackPromise
+          zk.delete(del, -1, result, null)
+          result.future map { _ => this }
+        }).map(_.head)
       }
 
   /** sets the data associated with the current znode reference for a given version */
