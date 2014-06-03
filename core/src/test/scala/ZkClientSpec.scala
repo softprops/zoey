@@ -11,10 +11,10 @@ class ZkClientSpec extends FunSpec with BeforeAndAfterAll
   with testing.ZkServer {
 
   lazy val svr = server()
+  lazy val zk = ZkClient(svr.connectStr)
 
   describe("ZkClient") {
     it ("should work") {
-      val zk = ZkClient(svr.clientAddr)
       val path = "/test/parent/grandparent"
       val future =
         for {
@@ -39,6 +39,7 @@ class ZkClientSpec extends FunSpec with BeforeAndAfterAll
   }
 
   override def afterAll() {
-    svr.shutdown()
+    zk.close()
+    svr.close()
   }
 }
