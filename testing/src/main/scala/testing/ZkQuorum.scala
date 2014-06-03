@@ -1,12 +1,13 @@
 package zoey.testing
 
+import org.apache.zookeeper.server.quorum.QuorumStats.Provider
 import org.apache.zookeeper.server.{ ServerCnxnFactory, ZooKeeperServer }
 import org.apache.zookeeper.server.quorum.{
   QuorumPeer, QuorumPeerConfig, QuorumPeerMain
 }
 import java.net.InetSocketAddress
 import java.nio.channels.ServerSocketChannel
-import java.io.{ BufferedWriter, File, FileWriter }
+import java.io.{ Closeable, BufferedWriter, File, FileWriter }
 import java.util.{ Properties, UUID }
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
@@ -19,6 +20,7 @@ trait ZkQuorum {
   case class Builder(
     _id: Long = 1,
     _clientAddress: Option[InetSocketAddress] = None,
+    _clientPort: Option[Int] = None,
     _dataDir: Option[File] = None,
     _dataLogDir: Option[File] = None,
     _localSessionsEnabled: Option[Boolean] = None,
@@ -42,6 +44,7 @@ trait ZkQuorum {
     def servers(svrs: (Long, (InetSocketAddress, Int))*) =
       copy(_servers = svrs.toMap)
     def clientAddr(addr: InetSocketAddress) = copy(_clientAddress = Some(addr))
+    def clientPort(port: Int) = copy(_clientPort = Some(port))
     def dataDir(dir: File) = copy(_dataDir = Some(dir))
     def dataLogDir(dir: File) = copy(_dataLogDir = Some(dir))
     def localSessionsEnabled(enabled: Boolean) =
@@ -52,14 +55,15 @@ trait ZkQuorum {
     def maxConnections(max: Int) = copy(_maxClientCnxns = Some(max))
     def initLimit(limit: Int) = copy(_initLimit = Some(limit))
     def syncLimit(limit: Int) = copy(_syncLimit = Some(limit))
+    def electionAlg(alg: Int) = copy(_electionAlg = Some(alg))
     def toMap: Map[String, String] =
       (Map.empty[String, String] ++
-       _dataDir.map(("dataDir" -> _.getAbsolutePath)) ++
-       _dataLogDir.map(("dataLogDir" -> _.getAbsolutePath)) ++
-       _clientAddress.map(("clientPort" -> _.getPort.toString)) ++
+       _dataDir.map(("dataDir" -> _.getCanonicalPath)) ++
+       _dataLogDir.map(("dataLogDir" -> _.getCanonicalPath)) ++
+       _clientAddress.map(_.getPort).orElse(_clientPort).map(("clientPort" -> _.toString)) ++
        _localSessionsEnabled.map(("localSessionsEnabled" -> _.toString)) ++
        _localSessionsUpgradingEnabled.map(("localSessionsUpgradingEnabled" -> _.toString)) ++
-       _clientAddress.map(("clientPortAddress" -> _.getAddress.getHostAddress)) ++
+       _clientAddress.map(("clientPortAddress" -> _.getHostName)) ++
        _tickTime.map(("tickTime" -> _.toString)) ++
        _maxClientCnxns.map(("maxClientCnxns" -> _.toString)) ++
        _minSessionTimeout.map(("minSessionTimeout" -> _.toString)) ++
@@ -69,54 +73,59 @@ trait ZkQuorum {
        _electionAlg.map(("electionAlg" -> _.toString)) ++
        _quorumListenOnAllIPs.map(("quorumListenOnAllIPs" -> _.toString)) ++
        _syncEnabled.map(("syncEnabled" -> _.toString)) ++
-       _dynamicConfigFile.map(("dynamicConfigFile" -> _.getAbsolutePath)) ++
+       _dynamicConfigFile.map(("dynamicConfigFile" -> _.getCanonicalPath)) ++
        _standaloneEnabled.map(("standaloneEnabled" -> _.toString)) ++
        _servers.map({
          case (id, (addr, electPort)) =>
-           (s"server.$id",  addr.getAddress.getHostAddress :: addr.getPort :: electPort :: Nil mkString(":"))
+           (s"server.$id",  addr.getHostName :: addr.getPort :: electPort :: Nil mkString(":"))
        }).toMap)
 
     def build: QuorumPeerConfig = new QuorumPeerConfig() {
       _dataDir.foreach { base =>
         val myid = new File(base, "myid")
-        if (myid.createNewFile()) {
-          val writer = new BufferedWriter(new FileWriter(myid))
-          writer.write(_id.toString)
-          writer.flush()
-          writer.close()
+        try {
+          if (myid.createNewFile()) {
+            val writer = new BufferedWriter(new FileWriter(myid))
+            writer.write(_id.toString)
+            writer.flush()
+            writer.close()
+          } else sys.error(s"could not create file $myid")
+        } catch {
+          case e: Throwable =>
+            e.printStackTrace
+            throw e
         }
       }
-
       parseProperties(new Properties {
-        toMap.foreach {
-          case (k, v) => setProperty(k, v)
-        }
+        toMap.foreach { case (k,v) => setProperty(k, v) }
       })
     }
   }
 
   def defaultBuilder =  {
-    val path = new File(
-      System.getProperty("java.io.tmpdir"), "zk-" + UUID.randomUUID())
-    path.mkdir()
-    path.deleteOnExit()
+    val path = Files.randomTemp
     Builder()
-      .clientAddr(new InetSocketAddress(Port.random))
+      .clientPort(Port.random)
       .tickTime(ZooKeeperServer.DEFAULT_TICK_TIME)
       .maxConnections(100)
       .dataDir(path)
-      .dataLogDir(path)
-      .initLimit(10)
-      .syncLimit(5)
+      .initLimit(5)
+      .syncLimit(2)
   }
 
-  trait Quorum {
-    def shutdown(): Unit
-    def clientAddr: String
+  trait Quorum extends Closeable {
+    def connectStr: String
+    def kill(instance: Int): Unit
+    def killLeader: Unit
+    def foreach(f: QuorumMain => Unit): Unit
   }
 
-  class QuorumMain extends QuorumPeerMain {
-    def shutdown() =
+  case class QuorumMain(val id: Long) extends QuorumPeerMain with Closeable {
+
+    def leader: Boolean =
+      Option(quorumPeer).filter(Provider.LEADING_STATE == _.getServerState).isDefined
+
+    def kill() {
       Option(quorumPeer).foreach { peer =>
         val cnxnFactField = classOf[QuorumPeer].getDeclaredField("cnxnFactory")
         cnxnFactField.setAccessible(true)
@@ -125,45 +134,66 @@ trait ZkQuorum {
         val ssField = cnxnFactory.getClass().getDeclaredField("ss")
         ssField.setAccessible(true)
         ssField.get(cnxnFactory).asInstanceOf[ServerSocketChannel].close()
-        peer.shutdown()
+        close()
       }
+    }
+
+    def close() {
+      Option(quorumPeer).foreach(_.shutdown())
+    }
 
     def awaitStartup: Unit =
       Option(quorumPeer) match {
         case None =>
           Thread.sleep(100)
           awaitStartup
-        case Some(_) =>
-          println(s"server $quorumPeer started")
+        case _ =>
       }
   }
 
-  def quorum(configure: Builder => Builder = identity): Quorum = {
-    val builder = configure(defaultBuilder)
-    val configs = builder._servers.map {
+  def quorum(
+    of: Int,
+    configure: Builder => Builder = identity): Quorum = {
+    val servers = (1 to of).map { id =>
+      (id.toLong,
+       (new InetSocketAddress("localhost", Port.random), // quorum address
+        Port.random))                                    // election port
+    }
+    val configs = servers.map {
       case (id, _) =>
-        (id, configure(defaultBuilder).id(id).build)
+        (id, configure(defaultBuilder).id(id).servers(servers:_*).build)
     }
     
     new Quorum {
-      val mains = configs.map {
-        case (id, _) => (id, new QuorumMain)
-      }.toMap
-      val runs = Future.sequence(configs.map {
+      val mains = configs.map { case (id, _) => (id, QuorumMain(id)) }.toMap
+      configs.foreach {
         case (id, cfg) =>
-          Future {
-            mains(id).runFromConfig(cfg)
-          }
-      })
-      mains.foreach { case (_, main) => main.awaitStartup }
-      runs.onFailure {
-        case NonFatal(e) =>
-          System.err.println("failed to start server $e")
+          // spawn new thread to ensure each instance is
+          // not started in the same thread
+          new Thread(new Runnable {
+            def run {
+              try mains(id).runFromConfig(cfg) catch {
+                case e: Throwable =>
+                  e.printStackTrace
+              }
+            }
+          }).start()
+          mains(id).awaitStartup
       }
-      def shutdown() = mains.foreach { case (_, main) => main.shutdown() }
-      def clientAddr: String = configs.map {
-        case (_, cfg) =>
-          s"${cfg.getClientPortAddress.getAddress.getHostAddress}:${cfg.getClientPortAddress.getPort}"
+
+      def close() = foreach(_.close())
+
+      def foreach(f: QuorumMain => Unit) =
+        mains.values.foreach(f)
+
+      def killLeader =
+        mains.values.filter(_.leader).foreach(_.kill())
+
+      def kill(instance: Int) =
+        mains.get(instance).foreach(_.kill())
+
+      def connectStr: String = configs.map {
+        case (_, cfg) => s"${cfg.getClientPortAddress.getHostName}:${cfg.getClientPortAddress.getPort}"
       }.mkString(",")
     }
   }
