@@ -9,3 +9,6 @@ licenses := Seq(("MIT",  url("https://github.com/softprops/%s/blob/%s/LICENSE"
                                            .format(name.value, version.value))))
 
 initialCommands := "import scala.concurrent.ExecutionContext.Implicits.global, zoey._; val c = ZkClient()"
+
+testOptions in Test += Tests.Setup(
+  () => System.setProperty("zookeeper.jmx.log4j.disable", "true"))
