@@ -10,8 +10,10 @@ trait AsyncCallbackPromise[T] {
   private val promise = Promise[T]()
   protected def process(rc: Int, path: String)(result: => T) {
     KeeperException.Code.get(rc) match {
-      case KeeperException.Code.OK => promise.success(result)
-      case code => promise.failure(KeeperException.create(code, path))
+      case KeeperException.Code.OK =>
+        promise.success(result)
+      case code =>
+        promise.failure(KeeperException.create(code, path))
     }
   }
   def future: Future[T] = promise.future
@@ -27,7 +29,7 @@ class StringCallbackPromise extends AsyncCallbackPromise[String]
 class UnitCallbackPromise extends AsyncCallbackPromise[Unit]
   with AsyncCallback.VoidCallback {
   def processResult(rc: Int, path: String, ctx: AnyRef) {
-    process(rc, path) { Unit }
+    process(rc, path) { }
   }
 }
 
