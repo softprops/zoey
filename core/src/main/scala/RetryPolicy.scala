@@ -13,7 +13,8 @@ object KeeperConnectionException {
       case e: KeeperException.SessionExpiredException => Some(e)
       case e: KeeperException.SessionMovedException => Some(e)
       case e: KeeperException.OperationTimeoutException => Some(e)
-      case e => None
+      case e =>
+        None
     }
 }
 
@@ -72,7 +73,8 @@ object RetryPolicy {
         if (max < 1 || success.predicate(res)) fut
         else orElse(max - 1)
       } recoverWith {
-        case NonFatal(e) => if (max < 1) fut else orElse(max - 1)
+        case NonFatal(e) =>
+          if (max < 1) fut else orElse(max - 1)
       }
     }
   }
