@@ -8,7 +8,7 @@ scalaVersion in ThisBuild := crossScalaVersions.value.head
 
 scalacOptions in ThisBuild ++= Seq(Opts.compile.deprecation)
 
-lazy val core = Common.module("core")
+lazy val core = project.settings(name := s"zoey-${name.value}")
   .dependsOn(testing % "test->test;compile->compile")
 
-lazy val testing = Common.module("testing")
+lazy val testing = project.settings(name := s"zoey-${name.value}")
