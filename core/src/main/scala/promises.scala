@@ -1,8 +1,8 @@
 package zoey
 
 import scala.concurrent.{ Future, Promise }
-import java.util.{List => JList}
-import org.apache.zookeeper.{AsyncCallback, KeeperException}
+import java.util.{ List => JList }
+import org.apache.zookeeper.{ AsyncCallback, KeeperException }
 import org.apache.zookeeper.data.Stat
 import scala.collection.JavaConverters._
 
