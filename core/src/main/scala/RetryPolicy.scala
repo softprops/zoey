@@ -18,6 +18,15 @@ object KeeperConnectionException {
     }
 }
 
+object KeeperAuthException {
+  def unapply(e: KeeperException): Option[KeeperException] =
+    e match {
+      case e: KeeperException.NoAuthException => Some(e)
+      case e: KeeperException.AuthFailedException => Some(e)
+      case _ => None
+    }
+}
+
 trait RetryPolicy {
   def apply[T](op: => Future[T]): Future[T]
 }
