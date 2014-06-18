@@ -5,6 +5,8 @@ import java.util.concurrent.atomic.AtomicReference
 import org.apache.zookeeper.ZooKeeper
 import scala.annotation.tailrec
 
+/** A connector defines a means of connecting to and referencing a zookeeper to
+ *  perform requests on and to release sources */
 trait Connector {
   protected[this] val listeners =
     new AtomicReference[List[Connector.EventHandler]](Nil)
@@ -23,6 +25,8 @@ trait Connector {
 object Connector {
   type EventHandler = PartialFunction[StateEvent, Unit]
 
+  /** A roundrobin connector distributes requests for client access across
+   *  a number of defined connectors */
   case class RoundRobin(connectors: Connector*)(
     implicit ec: ExecutionContext) extends Connector {
     private[this] var index = 0

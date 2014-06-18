@@ -10,13 +10,14 @@ import java.util.concurrent.atomic.AtomicReference
 case class NativeConnector(
   connectString: String,
   connectTimeout: Option[Duration],
-  sessionTimeout: Duration
-  )(implicit ec: ExecutionContext)
+  sessionTimeout: Duration,
+  authInfo: Option[AuthInfo])
+ (implicit ec: ExecutionContext)
   extends Connector {
 
   protected [this] def mkConnection =
     new NativeConnector.Connection(
-      connectString, connectTimeout, sessionTimeout, listeners.get())
+      connectString, connectTimeout, sessionTimeout, listeners.get(), authInfo)
 
   // register a session event listener for this listener
   onSessionEvent {
@@ -28,7 +29,6 @@ case class NativeConnector(
   @volatile private[this] var connection:
     Option[NativeConnector.Connection] = None
 
-  // connection timeout
   def apply(): Future[ZooKeeper] =
     connection.getOrElse {
       val c = mkConnection
@@ -53,16 +53,16 @@ case class NativeConnector(
 
 object NativeConnector {
 
-  case class ConnectTimeoutException(
-    connectString: String, timeout: Duration) extends TimeoutException(
-      "timeout connecting to %s after %s".format(connectString, timeout))
+  case class ConnectTimeoutException(connectString: String, timeout: Duration)
+    extends TimeoutException(s"timeout connecting to $connectString after $timeout")
 
   protected class Connection(
     connectString: String,
     connectTimeout: Option[Duration],
     sessionTimeout: Duration,
-    sessionListeners: List[Connector.EventHandler])(
-    implicit val ec: ExecutionContext) {
+    sessionListeners: List[Connector.EventHandler],
+    authInfo: Option[AuthInfo])
+   (implicit val ec: ExecutionContext) {
 
     @volatile protected[this] var zookeeper: Option[ZooKeeper] = None
 
@@ -125,6 +125,9 @@ object NativeConnector {
         case (ev, client) =>
           sessionListeners.foreach {
             _.lift(ev)
+          }
+          authInfo.foreach { info =>
+            client.addAuthInfo(info.scheme, info.data)
           }
           connectPromise.success(client)
       })

@@ -69,28 +69,34 @@ trait ZkClient {
     override val mode = _mode
     override val retryPolicy = _retryPolicy
   }
+
+  override def toString =
+    "ZkClient(%s)" format connection
 }
 
 object ZkClient {
   val DefaultHost = "0.0.0.0:2181"
+
   def apply(
     host: String = DefaultHost,
     connectTimeout: Option[FiniteDuration] = None,
-    sessionTimeout: FiniteDuration = 4.seconds)(
-    implicit ec: ExecutionContext): ZkClient =
+    sessionTimeout: FiniteDuration = 4.seconds,
+    authInfo: Option[AuthInfo] = None)
+   (implicit ec: ExecutionContext): ZkClient =
       new ZkClient {
         val connection = new NativeConnector(
-          host, connectTimeout, sessionTimeout)
+          host, connectTimeout, sessionTimeout, authInfo)
       }
 
    def roundRobin(
      hosts: Seq[String] = DefaultHost :: Nil,
      connectTimeout: Option[FiniteDuration] = None,
-     sessionTimeout: FiniteDuration = 4.seconds)(
-     implicit ec: ExecutionContext): ZkClient =
+     sessionTimeout: FiniteDuration = 4.seconds,
+     authInfo: Option[AuthInfo] = None)
+    (implicit ec: ExecutionContext): ZkClient =
       new ZkClient {
         val connection = Connector.RoundRobin(hosts.map(
           new NativeConnector(
-            _, connectTimeout, sessionTimeout)):_*)
+            _, connectTimeout, sessionTimeout, authInfo)):_*)
       }
 }
