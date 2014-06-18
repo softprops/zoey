@@ -3,6 +3,7 @@ package zoey.testing
 import org.apache.zookeeper.server.{
   NIOServerCnxnFactory, ServerCnxnFactory, ZooKeeperServer
 }
+import org.apache.zookeeper.server.auth.DigestAuthenticationProvider
 import java.io.Closeable
 import java.util.UUID
 import java.net.InetSocketAddress
@@ -24,7 +25,16 @@ trait ZkServer {
   def server(
     host: InetSocketAddress = new InetSocketAddress(Port.random),
     maxConnections: Int = 100,
-    tickTime: Int = ZooKeeperServer.DEFAULT_TICK_TIME): Server = {
+    tickTime: Int = ZooKeeperServer.DEFAULT_TICK_TIME,
+    auth: Option[(String, String)] = None): Server = {
+
+    // note: this makes parallelizing tests hard :/
+    auth.foreach {
+      case ("super", password) =>
+        // special case
+        System.setProperty("zookeeper.DigestAuthenticationProvider.superDigest", DigestAuthenticationProvider.generateDigest("super:$password"))
+      case (user, pass) =>
+    }
     val path = Files.randomTemp
     val server = new ZooKeeperServer(path, path, tickTime)
     val fact = ServerCnxnFactory.createFactory()

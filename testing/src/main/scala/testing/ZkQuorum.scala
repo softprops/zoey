@@ -116,14 +116,20 @@ trait ZkQuorum {
   trait Quorum extends Closeable {
     def connectStr: String
     def kill(instance: Int): Unit
-    def killLeader: Unit
-    def foreach(f: QuorumMain => Unit): Unit
+    def killLeader(): Unit
+    def closeLeader(): Unit
+    def foreach(f: Peer => Unit): Unit
   }
 
-  case class QuorumMain(val id: Long) extends QuorumPeerMain with Closeable {
+  case class Peer(val id: Long)
+    extends QuorumPeerMain with Closeable {
+
+    override def toString =
+      s"Peer(server: $id, leader: $leader)"
 
     def leader: Boolean =
-      Option(quorumPeer).filter(Provider.LEADING_STATE == _.getServerState).isDefined
+      Option(quorumPeer).filter(
+        Provider.LEADING_STATE == _.getServerState).isDefined
 
     def kill() {
       Option(quorumPeer).foreach { peer =>
@@ -165,7 +171,7 @@ trait ZkQuorum {
     }
     
     new Quorum {
-      val mains = configs.map { case (id, _) => (id, QuorumMain(id)) }.toMap
+      val mains = configs.map { case (id, _) => (id, Peer(id)) }.toMap
       configs.foreach {
         case (id, cfg) =>
           // spawn new thread to ensure each instance is
@@ -173,7 +179,7 @@ trait ZkQuorum {
           new Thread(new Runnable {
             def run {
               try mains(id).runFromConfig(cfg) catch {
-                case e: Throwable =>
+                case NonFatal(e) =>
                   e.printStackTrace
               }
             }
@@ -183,10 +189,13 @@ trait ZkQuorum {
 
       def close() = foreach(_.close())
 
-      def foreach(f: QuorumMain => Unit) =
+      def foreach(f: Peer => Unit) =
         mains.values.foreach(f)
 
-      def killLeader =
+      def closeLeader() =
+        mains.values.filter(_.leader).foreach(_.close())
+
+      def killLeader() =
         mains.values.filter(_.leader).foreach(_.kill())
 
       def kill(instance: Int) =
@@ -195,6 +204,8 @@ trait ZkQuorum {
       def connectStr: String = configs.map {
         case (_, cfg) => s"${cfg.getClientPortAddress.getHostName}:${cfg.getClientPortAddress.getPort}"
       }.mkString(",")
+
+      override def toString = mains.values.mkString(", ")
     }
   }
 }

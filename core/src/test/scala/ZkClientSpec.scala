@@ -34,7 +34,6 @@ class ZkClientSpec extends FunSpec with BeforeAndAfterAll
         case NonFatal(e) => e.printStackTrace
       }
       assert(Await.result(future, Duration.Inf).path === path)
-      zk.close()
     }
   }
 
