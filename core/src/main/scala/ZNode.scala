@@ -48,9 +48,10 @@ trait ZNode extends Paths {
       zk.create(newPath, data, acls.asJava, mode, result, null)
       result.future.map(zkClient(_)).recoverWith {
         case _: KeeperException.NoNodeException if (parent) =>
-          ZNode.mkdirp(zkClient, newPath.take(newPath.lastIndexOf("/"))).flatMap {
-            case _ => create(data, acls, mode, child, false)
-          }
+          ZNode.mkdirp(
+            zkClient, newPath.take(newPath.lastIndexOf("/"))).flatMap {
+              case _ => create(data, acls, mode, child, false)
+            }
       }
     }
   }
