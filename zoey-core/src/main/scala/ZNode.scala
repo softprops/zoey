@@ -1,6 +1,5 @@
 package zoey
 
-
 import org.apache.zookeeper.{ CreateMode, KeeperException, WatchedEvent, ZKUtil }
 import org.apache.zookeeper.common.PathUtils
 import org.apache.zookeeper.data.{ ACL, Stat }

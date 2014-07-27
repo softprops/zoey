@@ -4,7 +4,6 @@ import org.scalatest.{ BeforeAndAfterAll, FunSpec }
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
-import retry.Defaults.timer
 import scala.util.control.NonFatal
 
 class RoundRobinQuorumElectSpec extends FunSpec
@@ -12,7 +11,7 @@ class RoundRobinQuorumElectSpec extends FunSpec
 
   lazy val cluster = quorum(3)
   lazy val cli = ZkClient.roundRobin(
-    cluster.connectStr.split(","), Some(2.seconds)).retried(max = 3)
+    cluster.connectStr.split(","), Some(2.seconds)).retryTimes(max = 3)
 
   def awaitConnect = {
     val f = cli()      

@@ -5,9 +5,9 @@ import org.apache.zookeeper.server.{ ServerCnxnFactory, ZooKeeperServer }
 import org.apache.zookeeper.server.quorum.{
   QuorumPeer, QuorumPeerConfig, QuorumPeerMain
 }
+import java.io.{ Closeable, BufferedWriter, File, FileWriter }
 import java.net.InetSocketAddress
 import java.nio.channels.ServerSocketChannel
-import java.io.{ Closeable, BufferedWriter, File, FileWriter }
 import java.util.{ Properties, UUID }
 import scala.collection.JavaConverters._
 import scala.concurrent.Future

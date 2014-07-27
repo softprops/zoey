@@ -27,7 +27,7 @@ object KeeperAuthException {
     }
 }
 
-trait RetryPolicy {
+/*trait RetryPolicy {
   def apply[T](op: => Future[T]): Future[T]
 }
 
@@ -88,3 +88,4 @@ object RetryPolicy {
     }
   }
 }
+*/

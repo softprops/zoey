@@ -4,7 +4,6 @@ import org.scalatest.{ BeforeAndAfterAll, FunSpec }
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
-import retry.Defaults.timer
 import scala.util.control.NonFatal
 import java.net.InetSocketAddress
 
@@ -14,7 +13,7 @@ class RoundRobinConnectorSpec extends FunSpec
   val strAddrs = addrs.map(addr => s"${addr.getHostName}:${addr.getPort}").toList
   lazy val svr = server(addrs.last)
   lazy val cli = ZkClient.roundRobin(
-    strAddrs, Some(2.seconds)).retried(max = 3)
+    strAddrs, Some(2.seconds)).retryTimes(3)
 
   describe("RoundRobinConnector") {
     it ("should retry failed operations on each server provided") {

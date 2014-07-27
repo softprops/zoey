@@ -2,15 +2,15 @@ package zoey
 
 import scala.annotation.tailrec
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import org.apache.zookeeper.{ ZooKeeper, Watcher, WatchedEvent }
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 
 case class NativeConnector(
   connectString: String,
-  connectTimeout: Option[Duration],
-  sessionTimeout: Duration,
+  connectTimeout: Option[FiniteDuration],
+  sessionTimeout: FiniteDuration,
   authInfo: Option[AuthInfo])
  (implicit ec: ExecutionContext)
   extends Connector {
@@ -53,13 +53,13 @@ case class NativeConnector(
 
 object NativeConnector {
 
-  case class ConnectTimeoutException(connectString: String, timeout: Duration)
+  case class ConnectTimeoutException(connectString: String, timeout: FiniteDuration)
     extends TimeoutException(s"timeout connecting to $connectString after $timeout")
 
   protected class Connection(
     connectString: String,
-    connectTimeout: Option[Duration],
-    sessionTimeout: Duration,
+    connectTimeout: Option[FiniteDuration],
+    sessionTimeout: FiniteDuration,
     sessionListeners: List[Connector.EventHandler],
     authInfo: Option[AuthInfo])
    (implicit val ec: ExecutionContext) {
@@ -97,9 +97,10 @@ object NativeConnector {
      */
     lazy val connected: Future[ZooKeeper] = connectTimeout.map { to =>
       val prom = Promise[ZooKeeper]()
-      val fail = retry.Defaults.timer(
-        to.length, to.unit, prom.failure(
-          ConnectTimeoutException(connectString, to)))
+      val fail = odelay.Delay(to) {
+        prom.failure(
+          ConnectTimeoutException(connectString, to))
+      }
       val success = connectPromise.future
       success.onComplete { case _ => fail.cancel() }
       Future.firstCompletedOf(success :: prom.future :: Nil)

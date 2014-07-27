@@ -4,14 +4,14 @@ import org.scalatest.{ BeforeAndAfterAll, FunSpec }
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
-import retry.Defaults.timer
 import scala.util.control.NonFatal
 
 class RoundRobinQuorumSpec extends FunSpec
   with BeforeAndAfterAll with testing.ZkQuorum {
 
   lazy val cluster = quorum(3)
-  lazy val cli = ZkClient.roundRobin(cluster.connectStr.split(","), Some(2.seconds)).retried(max = 3)
+  lazy val cli = ZkClient.roundRobin(
+    cluster.connectStr.split(","), Some(2.seconds)).retryTimes(3)
 
   describe("RoundRobinQuorum") {
     it ("should retry failed operations on each server provided") {
