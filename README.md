@@ -71,7 +71,7 @@ Zookeeper stores data at points called ZNodes which are addressible by directory
 to the client.
 
 ```scala
-val node = cli("/foo/bar)
+val node = cli("/foo/bar")
 ```
 
 The above is just a reference to a ZNode's address. No information as been collected or sent to the server yet.
