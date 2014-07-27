@@ -27,8 +27,8 @@ object Connector {
 
   /** A roundrobin connector distributes requests for client access across
    *  a number of defined connectors */
-  case class RoundRobin(connectors: Connector*)(
-    implicit ec: ExecutionContext) extends Connector {
+  case class RoundRobin(connectors: Connector*)
+   (implicit ec: ExecutionContext) extends Connector {
     private[this] var index = 0
     private[this] def incrIndex() =
       synchronized {
