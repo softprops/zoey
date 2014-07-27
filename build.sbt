@@ -8,6 +8,8 @@ scalaVersion in ThisBuild := crossScalaVersions.value.head
 
 scalacOptions in ThisBuild ++= Seq(Opts.compile.deprecation)
 
+resolvers in ThisBuild += "softprops-maven" at "http://dl.bintray.com/content/softprops/maven"
+
 libraryDependencies in ThisBuild += 
   ("org.apache.zookeeper" % "zookeeper" % "3.4.6").exclude("javax.jms", "jms").exclude("com.sun.jmx", "jmxri").exclude("com.sun.jdmk", "jmxtools")
 
