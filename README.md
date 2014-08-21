@@ -31,9 +31,9 @@ Perhaps you have a number of potential servers you'd like your client to try. In
 val cli = zoey.ZkClient.roundRobin(hostA :: hostB :: hostC :: Nil)
 ```
 
-A robin robin client, as you may have guessed, tries operations on a list of hosts until one responds, trying in the order you've provided.
+A robin-robin client, as you may have guessed, cycles through a list of hosts when performing operations on a given set of hosts.
 
-Of course if the server is unavailable you don't want to wait on a connection to establish all day. In these cases you may with to set a connection timeout.
+Of course, if the server is unavailable, you don't want to wait on a connection to establish all day. In these cases you may with to set a connection timeout.
 
 ```scala
 import scala.concurrent.duration._
@@ -67,7 +67,7 @@ val retryingCli = cli.retryBackoff(max = 4, delay = 1 second)
 
 ### Getting data out
 
-Zookeeper stores data at points called ZNodes which are addressible by directory-like paths. To reference a ZNode, provide it's path
+Zookeeper stores data at points called ZNodes which are addressable by directory-like paths. To reference a ZNode, provide it's path
 to the client.
 
 ```scala
