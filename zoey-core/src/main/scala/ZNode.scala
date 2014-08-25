@@ -4,7 +4,7 @@ import org.apache.zookeeper.{ CreateMode, KeeperException, WatchedEvent, ZKUtil 
 import org.apache.zookeeper.common.PathUtils
 import org.apache.zookeeper.data.{ ACL, Stat }
 import scala.collection.JavaConverters._
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.{ Failure, Try }
 
 trait ZNode extends Paths {
@@ -183,6 +183,10 @@ object ZNode {
           case parent =>
             mkdirp(zk, parent, makes :+ path)
         }
+    }.flatMap { value =>
+      if (makes.nonEmpty) Future.sequence(
+        makes.map(zk(_).create(acls = zk.acl, mode = zk.mode))).map(_.last)
+      else Promise.successful(value).future
     }
 
   /** @return a new ZNode, if the path is invalid
