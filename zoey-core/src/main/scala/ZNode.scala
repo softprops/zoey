@@ -48,7 +48,7 @@ trait ZNode extends Paths {
       result.future.map(zkClient(_)).recoverWith {
         case _: KeeperException.NoNodeException if (parent) =>
           ZNode.mkdirp(
-            zkClient, newPath.take(newPath.lastIndexOf("/"))).flatMap {
+            zkClient, acls, newPath.take(newPath.lastIndexOf("/"))).flatMap {
               case _ => create(data, acls, mode, child, false)
             }
       }
@@ -174,18 +174,21 @@ object ZNode {
       })
     }
 
-  def mkdirp(zk: ZkClient, path: String, makes: List[String] = Nil)(implicit ec: ExecutionContext): Future[ZNode] =
+  def mkdirp
+   (zk: ZkClient, acls: Seq[ACL], path: String, makes: List[String] = Nil)
+   (implicit ec: ExecutionContext): Future[ZNode] =
     zk(path).exists().recoverWith {
       case _: KeeperException.NoNodeException =>
         path.take(path.lastIndexOf("/")) match {
           case empty if empty.isEmpty =>
-            Future.sequence((path :: makes).map(zk(_).create(acls = zk.acl, mode = zk.mode))).map(_.last)
+            zk(path).create(acls = acls, mode = zk.mode)
           case parent =>
-            mkdirp(zk, parent, makes :+ path)
+            mkdirp(zk, acls, parent, makes :+ path)
         }
     }.flatMap { value =>
+      // so what if we created makes above
       if (makes.nonEmpty) Future.sequence(
-        makes.map(zk(_).create(acls = zk.acl, mode = zk.mode))).map(_.last)
+        makes.map(zk(_).create(acls = acls, mode = zk.mode))).map(_.last)
       else Promise.successful(value).future
     }
 

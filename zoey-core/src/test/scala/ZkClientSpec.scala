@@ -31,7 +31,9 @@ class ZkClientSpec extends FunSpec with BeforeAndAfterAll
         } yield after
 
       future.onFailure {
-        case NonFatal(e) => e.printStackTrace
+        case NonFatal(e) =>
+          println("future failed...")
+          e.printStackTrace
       }
       assert(Await.result(future, Duration.Inf).path === path)
     }
