@@ -44,9 +44,8 @@ object Connector {
 
     /** Disconnect from all ZooKeeper servers. */
     def release(): Future[Unit] =
-      Future.sequence {
-        connectors map { _.release() }
-      }.map(_ => Future.successful(()))
+      Future.sequence(connectors.map(_.release()))
+        .map(_ => Future.successful(()))
   }
 
 }
