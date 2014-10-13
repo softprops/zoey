@@ -29,19 +29,18 @@ object Connector {
    *  a number of defined connectors */
   case class RoundRobin(connectors: Connector*)
    (implicit ec: ExecutionContext) extends Connector {
-    private[this] var index = 0
-    private[this] def incrIndex() =
-      synchronized {
-        if (index == Int.MaxValue) {
-          index = 0
+    @volatile private[this] var iter = connectors.iterator
+    private[this] val robin = new Iterator[Connector] {
+      def hasNext = connectors.nonEmpty
+      def next = {
+        if (!iter.hasNext) {
+          iter = connectors.iterator
         }
-        index = index + 1
-        index
+        iter.next
       }
-    protected[this] def next() =      
-      connectors(incrIndex() % connectors.length)
+    }
 
-    def apply(): Future[ZooKeeper] = next().apply()
+    def apply(): Future[ZooKeeper] = robin.next().apply()
 
     /** Disconnect from all ZooKeeper servers. */
     def release(): Future[Unit] =
