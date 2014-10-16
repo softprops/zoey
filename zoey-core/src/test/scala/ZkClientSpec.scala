@@ -21,8 +21,8 @@ class ZkClientSpec extends FunSpec with BeforeAndAfterAll
           parent <- zk.aclOpenUnsafe(path).create(parent = true)
           foo    <- parent.create(child = Some("foo"))
           bar    <- parent.create(child = Some("bar"))
-          kids   <- parent.getChildren()
-          if kids.children.toSet == Set(foo, bar)
+          kids   <- parent.children()
+          if kids.nodes.toSet == Set(foo, bar)
           after  <- parent.deleteAll
           _      <- after.exists().map(_ => true).recover {
             case _: KeeperException.NoNodeException =>

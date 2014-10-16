@@ -17,8 +17,8 @@ class ZkAuthClientSpec extends FunSpec with BeforeAndAfterAll
     it ("should require auth") {
       val future = for {
         foo        <- authed("/foo").create("data".getBytes)
-        authedData <- foo.getData()
-        anonData   <- anon("/foo").getData()
+        authedData <- foo.data()
+        anonData   <- anon("/foo").data()
       } yield (authedData, anonData)
       Await.ready(future, Duration.Inf)
       future.onComplete {

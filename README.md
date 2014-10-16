@@ -1,3 +1,4 @@
+
 # zoey
 
 [![Build Status](https://travis-ci.org/softprops/zoey.svg)](https://travis-ci.org/softprops/zoey)
@@ -115,10 +116,10 @@ watch.foreach {
 }
 ```
 
-Besides knowing that a given ZNode exists, you can as for what data it may contain with `getData`.
+Besides knowing that a given ZNode exists, you can as for what data it may contain with `data`.
 
 ```scala
-node.getData().foreach {
+node.data().foreach {
   case node => println(s"node stores ${node.bytes.size} bytes")
 }
 ```
@@ -126,8 +127,8 @@ node.getData().foreach {
 ZNodes differ from tranditional filesystem file descriptors in that they can act as both containers for data _and_ directories which have a list of child paths which are addresses to other ZNodes.
 
 ```scala
-node.getChildren().foreach {
-  case node => println(s"node has ${node.children.size} children")
+node.children().foreach {
+  case node => println(s"node has ${node.nodes.size} children")
 }
 ```
 
@@ -150,7 +151,7 @@ by the zookeeper server if there are other zookeeper clients interacting with th
 attaches version information to ZNodes. You can read this version information by requesting the znode [Stat](http://zookeeper.apache.org/doc/r3.4.6/api/org/apache/zookeeper/data/Stat.html) with `znode.exists`.
 
 ```scala
-node.setData("updated".getBytes, version).foreach {
+node.set("updated".getBytes, version).foreach {
   case result => println(s"updated $result")
 }
 ```
