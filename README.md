@@ -5,6 +5,20 @@
 
 a non-blocking interface for [apache zookeeper](http://zookeeper.apache.org/). Inspired by Twitter's wonderful zk-client, implemented in terms of scala's standard library features.
 
+## goals
+
+* be simple
+
+The underlying concepts of zookeeper are simple. Interacting with the standard java driver is not.
+
+* be robust
+
+Zookeeper is a mature HA answer for many distributed systems questions. Despite that, networks are still unreliable. These zookeeper interfaces should be designed with that in mind.
+
+* be asyncronous by default
+
+The standard java zookeeper driver supports blocking operations with an optional support for callback style async operations. Scala's standard library Futures model latter very well providing a familiar interface that works well with existing scala libraries. 
+
 ## usage
 
 ### zoey core
