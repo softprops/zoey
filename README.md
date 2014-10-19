@@ -68,7 +68,7 @@ Zoey's client interfaces produce immutable instances but who share a client conn
 val ephemeralSeqCli = cli.emphermalSequential
 ```
 
-Operations requested of a distributed network system are not guaranteed to be successful due to a number of potential factors. To make zoey
+Operations requested over a distributed network system are not guaranteed to be successful due to a number of potential factors. To make zoey
 more robust in the face of these potential issues, zoey provides an interface for retrying failed operations, leveraging interfaces defined in the [retry](https://github.com/softprops/retry) library.
 
 The following will attempt to retry operations up to 4 times with an [exponential backoff](https://github.com/softprops/retry#backoff) time starting at 1 second.
