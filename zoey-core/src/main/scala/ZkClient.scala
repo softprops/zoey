@@ -42,7 +42,7 @@ class ZkClient(
     connection.onSessionEvent(f)
 
   /** closes client and releases resources */
-  def close(): Future[Unit] = connection.release()
+  def close(): Future[Unit] = connection.close()
 
   // modes
 

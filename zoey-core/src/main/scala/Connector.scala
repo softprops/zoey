@@ -5,15 +5,17 @@ import java.util.concurrent.atomic.AtomicReference
 import org.apache.zookeeper.ZooKeeper
 import scala.annotation.tailrec
 
-/** A connector defines a means of connecting to and referencing a zookeeper to
- *  perform requests on and to release sources */
+/** A connector provides a means of connecting to and referencing a zookeeper to
+ *  perform requests on and to release sources for */
 trait Connector {
   protected[this] val listeners =
     new AtomicReference[List[Connector.EventHandler]](Nil)
 
+  /** Obtains a reference to a zookeeper */
   def apply(): Future[ZooKeeper]
 
-  def release(): Future[Unit]
+  /** Closes underlying connection resources */
+  def close(): Future[Unit]
 
   @tailrec
   final def onSessionEvent(f: Connector.EventHandler) {
@@ -43,8 +45,8 @@ object Connector {
     def apply(): Future[ZooKeeper] = robin.next().apply()
 
     /** Disconnect from all ZooKeeper servers. */
-    def release(): Future[Unit] =
-      Future.sequence(connectors.map(_.release()))
+    def close(): Future[Unit] =
+      Future.sequence(connectors.map(_.close()))
         .map(_ => Future.successful(()))
   }
 

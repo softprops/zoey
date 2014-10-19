@@ -22,7 +22,7 @@ case class NativeConnector(
   // register a session event listener for this listener
   onSessionEvent {
     case StateEvent.Expired =>
-      Await.result(release(), Duration.Inf)
+      Await.result(close(), Duration.Inf)
     case other => ()
   }
 
@@ -36,18 +36,18 @@ case class NativeConnector(
       c
     }.apply().recoverWith {
       case e: NativeConnector.ConnectTimeoutException =>
-        release() flatMap { _ => Future.failed(e) }
+        close() flatMap { _ => Future.failed(e) }
       case e =>
         Future.failed(e)
     }
 
-  def release(): Future[Unit] =
+  def close(): Future[Unit] =
     connection match {
       case None =>
         Future.successful(())
       case Some(c) =>
         connection = None
-        c.release()
+        c.close()
     }
 }
 
@@ -88,7 +88,7 @@ object NativeConnector {
     }
 
     protected[this] var connectPromise = Promise[ZooKeeper]()
-    protected[this] val releasePromise = Promise[Unit]()
+    protected[this] val closePromise = Promise[Unit]()
 
     /** if connectTimeout is defined, a secondary future will be scheduled
      *  to fail at this time. If this failure happens before the connection
@@ -106,18 +106,18 @@ object NativeConnector {
       Future.firstCompletedOf(success :: prom.future :: Nil)
     }.getOrElse(connectPromise.future)
 
-    lazy val released: Future[Unit] = releasePromise.future
+    lazy val closed: Future[Unit] = closePromise.future
 
     def apply(): Future[ZooKeeper] = {
       zookeeper = zookeeper orElse Some(mkZooKeeper)
       connected
     }
 
-    def release()(implicit ec: ExecutionContext): Future[Unit] = Future {
+    def close()(implicit ec: ExecutionContext): Future[Unit] = Future {
       zookeeper.foreach { zk =>
         zk.close()
         zookeeper = None
-        releasePromise.success(())
+        closePromise.success(())
       }
     }
 
