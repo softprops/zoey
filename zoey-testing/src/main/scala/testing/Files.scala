@@ -4,7 +4,7 @@ import java.util.Random
 import java.lang.{ Integer => JInt }
 import java.io.File
 
-object Files {
+private [testing] object Files {
   private lazy val random = new Random
   /** creates a new random temporary dir */
   def randomTemp = {
