@@ -18,6 +18,10 @@ Zookeeper is a mature HA answer for many distributed systems questions. Despite 
 
 The standard java zookeeper driver supports blocking operations with an optional support for callback style async operations. Scala's standard library Futures model latter very well providing a familiar interface that works well with existing scala libraries. 
 
+* model interfaces more closely to the domain
+
+The standard java zookeeper driver defines one entrypoint, the client, which defines a number of methods for both managing a sessions's connection state and performing operations on paths. Zoey splits up this inteface in a way that makes ZNodes, a core zookeeper abstraction, a first class citizen in zoey's client interface.
+
 ## usage
 
 ### zoey core
