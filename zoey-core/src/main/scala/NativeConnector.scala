@@ -53,8 +53,12 @@ case class NativeConnector(
 
 object NativeConnector {
 
-  case class ConnectTimeoutException(connectString: String, timeout: FiniteDuration)
+  case class ConnectTimeoutException(
+    connectString: String, timeout: FiniteDuration)
     extends TimeoutException(s"timeout connecting to $connectString after $timeout")
+
+  case object ClosedException
+    extends RuntimeException("This connection was already closed")
 
   protected class Connection(
     connectString: String,
@@ -108,12 +112,13 @@ object NativeConnector {
 
     lazy val closed: Future[Unit] = closePromise.future
 
-    def apply(): Future[ZooKeeper] = {
-      zookeeper = zookeeper orElse Some(mkZooKeeper)
-      connected
-    }
+    def apply(): Future[ZooKeeper] =
+      if (closed.isCompleted) Future.failed(ClosedException) else {
+        zookeeper = zookeeper orElse Some(mkZooKeeper)
+        connected
+      }
 
-    def close()(implicit ec: ExecutionContext): Future[Unit] = Future {
+    def close(): Future[Unit] = Future {
       zookeeper.foreach { zk =>
         zk.close()
         zookeeper = None

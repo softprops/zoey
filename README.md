@@ -171,4 +171,18 @@ node.set("updated".getBytes, version).foreach {
 }
 ```
 
+### Closing time
+
+Since a zoey ZkClient maintains a persistent connection with a zookeeper server, you should instrument your application in a way
+to gracefully terminate this connection. To do this. Simply call the `close` method defined on ZkClient which will return a Future that will be satisfied when the close operation is complete.
+
+```scala
+val closeFuture = zkClient.close()
+closeFuture.foreach {
+  case _ => println("the zoo is closed")
+}
+```
+
+Close should only be called once.
+
 Doug Tangren (softprops) 2013-2014
