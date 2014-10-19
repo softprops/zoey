@@ -3,7 +3,7 @@
 
 [![Build Status](https://travis-ci.org/softprops/zoey.svg)](https://travis-ci.org/softprops/zoey)
 
-a non-blocking interface for [apache zoookeeper](http://zookeeper.apache.org/). Inspired by Twitter's wonderful zk-client, implemented in terms of scala's standard library features.
+a non-blocking interface for [apache zookeeper](http://zookeeper.apache.org/). Inspired by Twitter's wonderful zk-client, implemented in terms of scala's standard library features.
 
 ## usage
 
@@ -20,28 +20,26 @@ val cli = zoey.ZkClient()
 ```
 
 The default client will connect a zookeeper server listening on `0.0.0.0:2181`. If you've spun up a zookeeper locally
-this may be fine, but if you've spun one up on another host just provide that connection string as an argument to you clients constructor.
+this may be fine, but if you've spun one up on another host just provide that connection string as an argument to your clients constructor.
 
 ```scala
 val cli = zoey.ZkClient(connectString)
 ```
 
-Many clients connecting to the same servers to perform operations can have an undesierable herding affect. Zookeeper servers are often distributed across a number of hosts for high availability. A _round robin_ interface is provided for creating a zookeeper client that will perform operations on a different host for each operation in the order the hosts are defined.
+Many clients connecting to the same servers to perform operations can have an undesierable herding effect. Zookeeper servers are often distributed across a number of hosts for high availability. A _round robin_ interface is provided for creating a zookeeper client that will perform requests on a different host for each operation in the order the hosts are defined.
 
 ```scala
 val cli = zoey.ZkClient.roundRobin(hostA :: hostB :: hostC :: Nil)
 ```
 
-A robin-robin client, as you may have guessed, cycles through a list of hosts when performing operations on a given set of hosts.
-
-If the server is unavailable, you don't want to wait on a connection to establish all day. In these cases you may with to set a connection timeout.
+If a given server is unavailable, you don't want to wait on a connection to establish all day. In these cases you may with to set a connection timeout, specified as a [FiniteDuration](http://www.scala-lang.org/api/current/index.html#scala.concurrent.duration.FiniteDuration).
 
 ```scala
 import scala.concurrent.duration._
 val cli = zoey.ZkClient(connectString, connectTimeout = Some(3 seconds))
 ```
 
-Once connected the server will attempt to make sure its connection with you is healthy by establishing a session timeout for gaps in network connectivity. By default this session timeout is set to 4 seconds. If you wish to change this, set the sessionTimeout when creating your client.
+Once connected the server, the server will attempt to make sure its connection with you is healthy by establishing a session timeout for gaps in network connectivity. By default, this session timeout is set to 4 seconds. If you wish to change this, set the sessionTimeout when creating your client.
 
 ```scala
 import scala.concurrent.duration._
