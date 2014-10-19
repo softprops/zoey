@@ -11,7 +11,8 @@ class RoundRobinQuorumElectSpec extends FunSpec
 
   lazy val cluster = quorum(3)
   lazy val cli = ZkClient.roundRobin(
-    cluster.connectStr.split(","), Some(2.seconds)).retryTimes(max = 3)
+    cluster.connectStr.split(","), Some(2.seconds))
+      .retryWith(retry.Directly(3))
 
   def awaitConnect = {
     val f = cli()      

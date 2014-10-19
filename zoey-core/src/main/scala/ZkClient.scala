@@ -16,7 +16,7 @@ class ZkClient(
   protected[this] val retryPolicy: Option[retry.Policy] = None)
  (implicit ec: ExecutionContext) {
 
-  /** @return a reference to a ZNode by path */
+  /** alias for znode(path) */
   def apply(path: String): ZNode = znode(path)
 
   /** @return a reference to a zNode by path */
@@ -44,7 +44,7 @@ class ZkClient(
   /** closes client and releases resources */
   def close(): Future[Unit] = connection.close()
 
-  // modes
+  // create modes
 
   def ephemeral = copy(_mode = CreateMode.EPHEMERAL)
 
@@ -65,17 +65,6 @@ class ZkClient(
   // retries
 
   def retryWith(policy: retry.Policy) = copy(_retryPolicy = Some(policy))
-
-  def retryTimes(max: Int) = retryWith(retry.Directly(max))
-
-  def retryPausing(max: Int = 4, delay: FiniteDuration = 1.second) =
-    retryWith(retry.Pause(max, delay))
- 
-  def retryBackoff(
-    max: Int = 8,
-    delay: FiniteDuration = 1.second,
-    base: Int = 2) =
-    retryWith(retry.Backoff(max, delay, base))
 
   protected[this] def copy(
     _acl: Seq[ACL]                     = acl,

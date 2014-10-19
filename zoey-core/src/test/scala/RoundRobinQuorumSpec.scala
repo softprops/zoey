@@ -11,7 +11,8 @@ class RoundRobinQuorumSpec extends FunSpec
 
   lazy val cluster = quorum(3)
   lazy val cli = ZkClient.roundRobin(
-    cluster.connectStr.split(","), Some(2.seconds)).retryTimes(3)
+    cluster.connectStr.split(","), Some(2.seconds))
+    .retryWith(retry.Directly(3))
 
   describe("RoundRobinQuorum") {
     it ("should retry failed operations on each server provided") {
