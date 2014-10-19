@@ -46,8 +46,8 @@ import scala.concurrent.duration._
 val cli = zoey.ZkClient(connectStr, sessionTimeout = 10.seconds)
 ```
 
-Once you've created a client, you may which to configure it's _mode_ of operation. Typically this will be one of ephemeral or persistent and optional sequential.
-The client mode dictates how long of information is stored on zookeeper servers when writing to information. The default is persistent.
+Once you've created a client, you may which to configure it's [mode](http://zookeeper.apache.org/doc/r3.4.6/api/org/apache/zookeeper/CreateMode.html) of operation. Typically this will be one of ephemeral or persistent and optionally sequential.
+The client mode defines the semantics for how long of information written to zookeeper is stored. The default is persistent.
 
 Zoey's client interfaces produce immutable instances but who share a client connection. Keep this in mind when storing references to client instances.
 
@@ -56,9 +56,9 @@ val ephemeralSeqCli = cli.emphermalSequential
 ```
 
 Operations requested of a distributed network system are not guaranteed to be successful due to a number of potential factors. To make zoey
-more robust in the face of these potential issues, zoey provides an interface for retrying failed operations.
+more robust in the face of these potential issues, zoey provides an interface for retrying failed operations, leveraging interfaces defined in the [retry](https://github.com/softprops/retry) library.
 
-The following will attempt to retry operations up to 4 times with an exponential backoff time starting at 1 second
+The following will attempt to retry operations up to 4 times with an [exponential backoff](https://github.com/softprops/retry#backoff) time starting at 1 second.
 
 ```scala
 val retryingCli = cli.retryBackoff(max = 4, delay = 1.second)
@@ -66,7 +66,7 @@ val retryingCli = cli.retryBackoff(max = 4, delay = 1.second)
 
 ### Getting data out
 
-Zookeeper stores data at points called ZNodes which are addressable by directory-like paths. To reference a ZNode, provide it's path
+Zookeeper stores data with structures called ZNodes which are addressable by directory-like paths. To reference a ZNode, provide it's path
 to the client.
 
 ```scala
@@ -79,11 +79,11 @@ or more simply...
 val node = cli("/foo/bar")
 ```
 
-The above `node` is a reference to a zookeepers ZNode's address. No information as been collected from or sent to the server yet.
+The above `node` is a reference to a zookeepers ZNode's address. No information as been collected from or sent to the server yet. It is just a description for a future point of reference when invoking operations.
 
-Zookeeper defines a basic set of operations for creating updating and reading data from ZNodes.
+Zookeeper defines a basic set of operations for creating, updating and reading data from ZNodes.
 
-Read operations are unique in that you can request information, and optionally, ask to get notified when this information changes.
+Read operations are unique in that you can request information, and optionally, request to get notified when this information changes.
 
 Zookeeper calls these notifications "watches"
 
@@ -93,18 +93,18 @@ These watch notifications only fire once, and thus, are perfectly representated 
 
 ```scala
 // the `exists` operation
-val op = node.exists
+val exists = node.exists
 
 // calling apply() on a read operation produces a future which will be satisfied once information is retried once
-val result = op()
-result.foreach {
+val future = exists()
+future.foreach {
   case exists => println(s"rec $exists")
 }
 
 // calling watch() on a read operation produces a structure that exposes of the result of the operation as a Try and a future 
 // which will be satisfied when an update to this information occurs. Since futures may only be satisfied once, when
 // and update occurs you will need to re-request a new watch for the read operation on the ZNode
-val watch = op.watch()
+val watch = exists.watch()
 watch.foreach {
   case zoey.Watch(exists, updateFuture) =>
     println(s"exists $exists")
@@ -114,11 +114,13 @@ watch.foreach {
 }
 ```
 
-Besides knowing that a given ZNode exists, you can as for what data it may contain with `data`.
+Besides knowing that a given ZNode exists, you can ask for what data is contain with the `data` operation.
 
 ```scala
 node.data().foreach {
-  case node => println(s"node stores ${node.bytes.size} bytes")
+  case data =>
+    // data is a znode ref populated with the bytes stored at its path
+    println(s"node stores ${data.bytes.size} bytes")
 }
 ```
 
@@ -126,7 +128,9 @@ ZNodes differ from tranditional filesystem file descriptors in that they can act
 
 ```scala
 node.children().foreach {
-  case node => println(s"node has ${node.nodes.size} children")
+  case chilren =>
+    // children is a znode ref populated with the nodes stored at its path
+    println(s"node has ${children.nodes.size} children")
 }
 ```
 
