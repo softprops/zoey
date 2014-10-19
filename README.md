@@ -74,7 +74,8 @@ more robust in the face of these potential issues, zoey provides an interface fo
 The following will attempt to retry operations up to 4 times with an [exponential backoff](https://github.com/softprops/retry#backoff) time starting at 1 second.
 
 ```scala
-val retryingCli = cli.retryBackoff(max = 4, delay = 1.second)
+val retryingCli = cli.retryWith(
+  retry.Backoff(max = 4, delay = 1.second))
 ```
 
 ### Getting data out
