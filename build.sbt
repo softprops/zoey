@@ -16,6 +16,3 @@ libraryDependencies in ThisBuild +=
 lazy val `zoey-core` = project.dependsOn(`zoey-testing` % "test->test;compile->compile")
 
 lazy val `zoey-testing` = project
-
-licenses in ThisBuild := Seq(
-  ("MIT", url(s"https://github.com/softprops/zoey/blob/${version.value}/LICENSE")))

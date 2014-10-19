@@ -1,4 +1,4 @@
-licenses := Seq(("MIT", url(s"https://github.com/softprops/zoey/blob/${version.value}/LICENSE")))
+licenses in ThisBuild := Seq(("MIT", url(s"https://github.com/softprops/zoey/blob/${version.value}/LICENSE")))
 
 publishArtifact in Test := false
 

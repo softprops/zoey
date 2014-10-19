@@ -1,4 +1,3 @@
-
 # zoey
 
 [![Build Status](https://travis-ci.org/softprops/zoey.svg)](https://travis-ci.org/softprops/zoey)
