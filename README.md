@@ -154,7 +154,7 @@ node.children().foreach {
 }
 ```
 
-An instance of [Ordering](http://www.scala-lang.org/api/current/index.html#scala.math.Ordering) is defined for ZNodes is defined which accounts [sequential](http://zookeeper.apache.org/doc/r3.4.6/api/org/apache/zookeeper/CreateMode.html#EPHEMERAL_SEQUENTIAL) [names](http://zookeeper.apache.org/doc/r3.4.6/api/org/apache/zookeeper/CreateMode.html#PERSISTENT_SEQUENTIAL). This is useful due to the fact that getting the children of a given znode defines [no guarantees](http://zookeeper.apache.org/doc/r3.4.6/api/org/apache/zookeeper/ZooKeeper.html#getChildren(java.lang.String, boolean)) about the order in which they are returned.
+An instance of [Ordering](http://www.scala-lang.org/api/current/index.html#scala.math.Ordering) is defined for ZNodes which accounts for [sequential](http://zookeeper.apache.org/doc/r3.4.6/api/org/apache/zookeeper/CreateMode.html#EPHEMERAL_SEQUENTIAL) [names](http://zookeeper.apache.org/doc/r3.4.6/api/org/apache/zookeeper/CreateMode.html#PERSISTENT_SEQUENTIAL). This is useful due to the fact that getting the children of a given znode defines [no guarantees](http://zookeeper.apache.org/doc/r3.4.6/api/org/apache/zookeeper/ZooKeeper.html#getChildren(java.lang.String, boolean)) about the order in which they are returned.
 
 ### Getting data in
 
