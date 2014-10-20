@@ -1,6 +1,6 @@
 licenses in ThisBuild := Seq(("MIT", url(s"https://github.com/softprops/zoey/blob/${version.value}/LICENSE")))
 
-publishArtifact in Test := false
+publishArtifact in Test in ThisBuild := false
 
 pomExtra in ThisBuild := (
   <scm>
@@ -16,3 +16,12 @@ pomExtra in ThisBuild := (
   </developers>)
 
 bintraySettings
+
+bintray.Keys.packageLabels in bintray.Keys.bintray := Seq("zookeeper", "distributed-systems")
+
+lsSettings
+
+LsKeys.tags in LsKeys.lsync := (bintray.Keys.packageLabels in bintray.Keys.bintray).value
+
+externalResolvers in LsKeys.lsync := (resolvers in bintray.Keys.bintray).value
+
