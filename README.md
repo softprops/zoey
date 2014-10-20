@@ -148,7 +148,7 @@ ZNodes differ from tranditional filesystem file descriptors in that they can act
 
 ```scala
 node.children().foreach {
-  case chilren =>
+  case children =>
     // children is a znode ref populated with the nodes stored at its path
     println(s"node has ${children.nodes.size} children")
 }
