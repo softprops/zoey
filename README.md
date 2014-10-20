@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/softprops/zoey.svg)](https://travis-ci.org/softprops/zoey)
 
+> taking Scala to the zoo
+
 a non-blocking interface for [apache zookeeper](http://zookeeper.apache.org/). Inspired by Twitter's wonderful zk-client, implemented in terms of scala's standard library features.
 
 ## goals
