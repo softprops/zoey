@@ -8,3 +8,5 @@ initialCommands := "import scala.concurrent.ExecutionContext.Implicits.global, z
 
 testOptions in Test += Tests.Setup(
   () => System.setProperty("zookeeper.jmx.log4j.disable", "true"))
+
+Publishing.settings

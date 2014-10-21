@@ -1,0 +1,25 @@
+{
+  "organization" : "me.lessis",
+  "name" : "zoey-core",
+  "version" : "0.1.0",
+  "description" : "an asyncronous interface for zookeeper",
+  "site" : "",
+  "tags" : [ "zookeeper", "distributed-systems" ],
+  "docs" : "",
+  "resolvers" : [ "http://dl.bintray.com/content/softprops/maven" ],
+  "dependencies" : [ {
+    "organization" : "org.apache.zookeeper",
+    "name" : "zookeeper",
+    "version" : "3.4.6"
+  }, {
+    "organization" : "me.lessis",
+    "name" : "retry",
+    "version" : "0.2.0"
+  } ],
+  "scalas" : [ "2.10.4", "2.11.2" ],
+  "licenses" : [ {
+    "name" : "MIT",
+    "url" : "https://github.com/softprops/zoey/blob/0.1.0/LICENSE"
+  } ],
+  "sbt" : false
+}

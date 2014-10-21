@@ -13,6 +13,8 @@ resolvers in ThisBuild += "softprops-maven" at "http://dl.bintray.com/content/so
 libraryDependencies in ThisBuild += 
   ("org.apache.zookeeper" % "zookeeper" % "3.4.6").exclude("javax.jms", "jms").exclude("com.sun.jmx", "jmxri").exclude("com.sun.jdmk", "jmxtools")
 
+publishArtifact := false
+
 lazy val `zoey-core` = project.dependsOn(`zoey-testing` % "test->test;compile->compile")
 
 lazy val `zoey-testing` = project
