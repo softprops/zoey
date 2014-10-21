@@ -24,6 +24,16 @@ The standard java zookeeper driver supports blocking operations with an optional
 
 The standard java zookeeper driver defines one entrypoint, the client, which defines a number of methods for both managing a sessions's connection state and performing operations on paths. Zoey splits up this inteface in a way that makes ZNodes, a core zookeeper abstraction, a first class citizen in zoey's client interface.
 
+## install
+
+add the following to your sbt build definition
+
+```scala
+resolvers += "softprops-maven" at "http://dl.bintray.com/content/softprops/maven"
+
+libraryDependencies += "me.lessis" %% "zoey-core" % "0.1.0"
+```
+
 ## usage
 
 ### zoey core
