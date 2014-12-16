@@ -1,6 +1,7 @@
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.1" % "test",
-  "me.lessis" %% "retry" % "0.2.0")
+  "me.lessis" %% "retry" % "0.2.0",
+  "me.lessis" %% "undelay" % "0.1.0")
 
 description := "an asyncronous interface for zookeeper"
 
