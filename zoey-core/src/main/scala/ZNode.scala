@@ -101,7 +101,7 @@ trait ZNode extends Paths {
         result.future
       }
 
-    def watch()(implicit ec: ExecutionContext) =
+    def watch()(implicit ec: ExecutionContext): Future[ZNode.Watch[ZNode.Children]] =
       keeper.retrying { zk =>
         val result = new ChildrenCallbackPromise(ZNode.this)
         val update = new EventPromise
@@ -119,7 +119,7 @@ trait ZNode extends Paths {
         result.future
       }
 
-    def watch()(implicit ec: ExecutionContext) =
+    def watch()(implicit ec: ExecutionContext): Future[ZNode.Watch[ZNode.Data]] =
       keeper.retrying { zk =>
         val result = new DataCallbackPromise(ZNode.this)
         val update = new EventPromise
@@ -130,7 +130,7 @@ trait ZNode extends Paths {
 
   val exists: ZOp[ZNode.Exists] = new ZOp[ZNode.Exists] {
 
-    def apply()(implicit ec: ExecutionContext) =
+    def apply()(implicit ec: ExecutionContext): Future[ZNode.Exists] =
       keeper.retrying { zk =>
         val result = new ExistsCallbackPromise(ZNode.this)
         zk.exists(path, false, result, null)
@@ -138,7 +138,7 @@ trait ZNode extends Paths {
       }
 
     /** Get this node's metadata and watch for updates */
-    def watch()(implicit e: ExecutionContext) =
+    def watch()(implicit e: ExecutionContext): Future[ZNode.Watch[ZNode.Exists]] =
       keeper.retrying { zk =>
         val result = new ExistsCallbackPromise(ZNode.this)
         val update = new EventPromise
