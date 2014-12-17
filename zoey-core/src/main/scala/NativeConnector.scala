@@ -102,7 +102,7 @@ object NativeConnector {
           "ref already set!")
     }
 
-    protected[this] var connectPromise = Promise[ZooKeeper]()
+    protected[this] val connectPromise = Promise[ZooKeeper]()
     protected[this] val closePromise = Promise[Unit]()
 
     /** if connectTimeout is defined, a secondary future will be scheduled
