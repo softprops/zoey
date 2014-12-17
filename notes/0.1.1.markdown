@@ -1,0 +1,9 @@
+## fixes
+
+Don't throw an error when connections receive disconnected state events from zookeeper servers. The underlying client will attempt to re-establish a connection on its own.
+
+## enhancements
+
+Clean up and reduce visibility of async callback promise interfaces
+
+See the project's [readme](https://github.com/softprops/zoey#readme) for a more in-depth overview.
