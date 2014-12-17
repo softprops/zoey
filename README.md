@@ -22,7 +22,7 @@ The standard java zookeeper driver supports blocking operations with an optional
 
 * model interfaces more closely to the domain
 
-The standard java zookeeper driver defines one entrypoint, the client, which defines a number of methods for both managing a sessions's connection state and performing operations on paths. Zoey splits up this inteface in a way that makes ZNodes, a core zookeeper abstraction, a first class citizen in zoey's client interface.
+The standard java zookeeper driver defines one entry point, the client, which defines a number of methods for both managing a session's connection state and performing operations on paths. Zoey splits up this interface in a way that makes ZNodes, a core zookeeper abstraction, a first class citizen in zoey's client interface.
 
 ## install
 
@@ -31,7 +31,7 @@ add the following to your sbt build definition
 ```scala
 resolvers += "softprops-maven" at "http://dl.bintray.com/content/softprops/maven"
 
-libraryDependencies += "me.lessis" %% "zoey-core" % "0.1.0"
+libraryDependencies += "me.lessis" %% "zoey-core" % "0.1.1"
 ```
 
 ## usage
@@ -55,7 +55,7 @@ this may be fine, but if you've spun one up on another host just provide that co
 val cli = zoey.ZkClient(connectString)
 ```
 
-Many clients connecting to the same servers to perform operations can have an undesierable herding effect. Zookeeper servers are often distributed across a number of hosts for high availability. A _round robin_ interface is provided for creating a zookeeper client that will perform requests on a different host for each operation in the order the hosts are defined.
+Many clients connecting to the same servers to perform operations can have an undesirable herding effect. Zookeeper servers are often distributed across a number of hosts for high availability. A _round robin_ interface is provided for creating a zookeeper client that will perform requests on a different host for each operation in the order the hosts are defined.
 
 ```scala
 val cli = zoey.ZkClient.roundRobin(hostA :: hostB :: hostC :: Nil)
@@ -119,7 +119,7 @@ Zookeeper calls these notifications "watches"
 
 For example, given the znode reference we created above, `node`, we can ask zookeeper if this ZNode exists _and_ to get notified when it that fact changes.
 
-These watch notifications only fire once, and thus, are perfectly representated as scala Futures which also may only be satisfied once.
+These watch notifications only fire once, and thus, are perfectly represented as scala Futures which also may only be satisfied once.
 
 ```scala
 // the `exists` operation
@@ -154,7 +154,7 @@ node.data().foreach {
 }
 ```
 
-ZNodes differ from tranditional filesystem file descriptors in that they can act as both containers for data _and_ directories which have a list of child paths which are addresses to other ZNodes.
+ZNodes differ from traditional file system file descriptors in that they can act as both containers for data _and_ directories which have a list of child paths which are addresses to other ZNodes.
 
 ```scala
 node.children().foreach {
@@ -170,7 +170,7 @@ An instance of [Ordering](http://www.scala-lang.org/api/current/index.html#scala
 
 Now that you know how to get information out of zookeeper. Let's look at how you get it in.
 
-ZNode path addresses work just like unix paths. You can't create path "/foo/bar" is path "/foo" doesn't exist. In the unix world you can request the `-p` (parent) flag to the `mkdir` command to ensure parent directories get created. With zoey, if you are storing data addressed at path "/foo/bar" and
+ZNode path addresses work just like UNIX paths. You can't create path "/foo/bar" is path "/foo" doesn't exist. In the UNIX world you can request the `-p` (parent) flag to the `mkdir` command to ensure parent directories get created. With zoey, if you are storing data addressed at path "/foo/bar" and
 don't know for sure that ZNode "/foo" exists you can set the `parent` parameter to true on create requests
 
 ```scala
