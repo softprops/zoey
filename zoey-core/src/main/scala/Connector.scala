@@ -27,6 +27,10 @@ trait Connector {
 object Connector {
   type EventHandler = PartialFunction[StateEvent, Unit]
 
+  /** const for future returned if close() called when
+   *  no connection is present */
+  private[zoey] val Closed = Future.successful(())
+
   /** A roundrobin connector distributes requests for client access across
    *  a number of defined connectors */
   case class RoundRobin(connectors: Connector*)
@@ -47,7 +51,7 @@ object Connector {
     /** Disconnect from all ZooKeeper servers. */
     def close(): Future[Unit] =
       Future.sequence(connectors.map(_.close()))
-        .map(_ => Future.successful(()))
+        .flatMap(_ => Connector.Closed)
   }
 
 }

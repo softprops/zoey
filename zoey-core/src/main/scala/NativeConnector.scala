@@ -7,6 +7,7 @@ import org.apache.zookeeper.{ ZooKeeper, Watcher, WatchedEvent }
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 
+/** A Connector that holds a reference to a zookeeper connection */
 case class NativeConnector(
   connectString: String,
   connectTimeout: Option[FiniteDuration],
@@ -15,23 +16,28 @@ case class NativeConnector(
  (implicit ec: ExecutionContext)
   extends Connector {
 
-  protected [this] def mkConnection =
-    new NativeConnector.Connection(
-      connectString, connectTimeout, sessionTimeout, listeners.get(), authInfo)
-
-  // register a session event listener for this listener
-  onSessionEvent {
-    case StateEvent.Expired =>
-      Await.result(close(), Duration.Inf)
-    case other => ()
-  }
-
+  /** A `cell` containing a reference to a Connection if one was resolved */
   @volatile private[this] var connection:
     Option[NativeConnector.Connection] = None
 
+  protected [this] def connect() =
+    new NativeConnector.Connection(
+      connectString,
+      connectTimeout,
+      sessionTimeout,
+      listeners.get(),
+      authInfo)
+
+  // register a session event listener for this Connector
+  onSessionEvent {
+    case StateEvent.Expired =>
+      Await.result(close(), Duration.Inf)
+  }
+
+  /** lazily resolves a cached zookeeper connection */
   def apply(): Future[ZooKeeper] =
     connection.getOrElse {
-      val c = mkConnection
+      val c = connect()
       connection = Some(c)
       c
     }.apply().recoverWith {
@@ -44,10 +50,10 @@ case class NativeConnector(
   def close(): Future[Unit] =
     connection match {
       case None =>
-        Future.successful(())
-      case Some(c) =>
+        Connector.Closed
+      case Some(ref) =>
         connection = None
-        c.close()
+        ref.close()
     }
 }
 
@@ -70,7 +76,11 @@ object NativeConnector {
 
     @volatile protected[this] var zookeeper: Option[ZooKeeper] = None
 
-    /** defer some behavior until afer we receive a state event */
+    override def toString =
+      s"${getClass.getName}(${zookeeper.getOrElse("(disconnected)")})"
+
+    /** defer some behavior until afer we receive a session  state event
+     *  http://zookeeper.apache.org/doc/trunk/zookeeperProgrammers.html#ch_zkSessions */
     private class ConnectionWatch(
       andThen: (StateEvent, ZooKeeper) => Unit) extends Watcher {
       private [this] val ref = new AtomicReference[ZooKeeper]
@@ -80,10 +90,11 @@ object NativeConnector {
           if (zk == null) await(ref.get()) else zk
         val zk = await(ref.get())
         StateEvent(e) match {
-          case c @ StateEvent.Connected =>
-            andThen(c, zk)
-          case e =>
-            sys.error(s"rec unexpected event $e")
+          case e @ StateEvent.Connected =>
+            andThen(e, zk)
+          case _ =>
+            // we capture session expired events in session listener
+            // the underlying client handles disconnects
         }
       }
       def set(zk: ZooKeeper) =
@@ -91,7 +102,7 @@ object NativeConnector {
           "ref already set!")
     }
 
-    protected[this] var connectPromise = Promise[ZooKeeper]()
+    protected[this] val connectPromise = Promise[ZooKeeper]()
     protected[this] val closePromise = Promise[Unit]()
 
     /** if connectTimeout is defined, a secondary future will be scheduled
@@ -99,15 +110,9 @@ object NativeConnector {
      *  is promise is satisfied, the future returned with be that of the
      *  failure
      */
-    lazy val connected: Future[ZooKeeper] = connectTimeout.map { to =>
-      val prom = Promise[ZooKeeper]()
-      val fail = odelay.Delay(to) {
-        prom.failure(
-          ConnectTimeoutException(connectString, to))
-      }
-      val success = connectPromise.future
-      success.onComplete { case _ => fail.cancel() }
-      Future.firstCompletedOf(success :: prom.future :: Nil)
+    lazy val connected: Future[ZooKeeper] = connectTimeout.map {
+      undelay.Complete(connectPromise.future).within(
+        _, ConnectTimeoutException(connectString, _))
     }.getOrElse(connectPromise.future)
 
     lazy val closed: Future[Unit] = closePromise.future

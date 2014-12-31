@@ -1,6 +1,6 @@
 ## initial release
 
-This is the first release of async client interface for [apache zookeeper](http://zookeeper.apache.org/). User's of Twitter util's zk-client library may
+This is the first release of async client interface for [apache zookeeper](http://zookeeper.apache.org/). Users of Twitter util's zk-client library may
 find zoey's interface familiar as it was the initial inspiration for its design.
 
 This library has a stronger preference towards leveraging many of the scala library interfaces to make it more interoperable with what you already have on your Scala classpath.

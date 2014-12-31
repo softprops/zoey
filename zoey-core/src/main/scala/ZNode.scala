@@ -41,7 +41,7 @@ trait ZNode extends Paths {
    (implicit ec: ExecutionContext): Future[ZNode] = {
     val newPath = child.map(childPath).getOrElse(path)
     keeper.retrying { zk =>
-      val result = new StringCallbackPromise
+      val result = new AsyncCallbackPromise.Str
       zk.create(newPath, data, acls.asJava, mode, result, null)
       result.future.map(keeper(_)).recoverWith {
         case _: KeeperException.NoNodeException if (parent) =>
@@ -57,7 +57,7 @@ trait ZNode extends Paths {
   def delete(version: Int = 0)
    (implicit ec: ExecutionContext): Future[ZNode] =
     keeper.retrying { zk =>
-      val result = new UnitCallbackPromise
+      val result = new AsyncCallbackPromise.Unit
       zk.delete(path, version, result, null)
       result.future map { _ => this }
     }
@@ -68,7 +68,7 @@ trait ZNode extends Paths {
     (implicit ec: ExecutionContext): Future[ZNode] =
       keeper.retrying { zk =>
         Future.sequence(ZKUtil.listSubTreeBFS(zk, path).asScala.reverse.map { del =>
-          val result = new UnitCallbackPromise
+          val result = new AsyncCallbackPromise.Unit
           zk.delete(del, -1, result, null)
           result.future map { _ => this }
         }).map(_.head)
@@ -78,7 +78,7 @@ trait ZNode extends Paths {
   def set(data: Array[Byte], version: Int)
    (implicit ec: ExecutionContext): Future[ZNode.Data] =
     keeper.retrying { zk =>
-      val result = new ExistsCallbackPromise(this)
+      val result = new AsyncCallbackPromise.Exists(this)
       zk.setData(path, data, version, result, null)
       result.future map { _.apply(data) }
     }
@@ -86,7 +86,7 @@ trait ZNode extends Paths {
   /** flushes channel between process and the leader */
   def sync()(implicit ec: ExecutionContext): Future[ZNode] =
     keeper.retrying { zk =>
-      val result = new UnitCallbackPromise
+      val result = new AsyncCallbackPromise.Unit
       zk.sync(path, result, null)
       result.future map { _ => this }
     }
@@ -96,14 +96,14 @@ trait ZNode extends Paths {
     /** Get this ZNode with its metadata and children */
     def apply()(implicit ec: ExecutionContext): Future[ZNode.Children] =
       keeper.retrying { zk =>
-        val result = new ChildrenCallbackPromise(ZNode.this)
+        val result = new AsyncCallbackPromise.Children(ZNode.this)
         zk.getChildren(path, false, result, null)
         result.future
       }
 
-    def watch()(implicit ec: ExecutionContext) =
+    def watch()(implicit ec: ExecutionContext): Future[ZNode.Watch[ZNode.Children]] =
       keeper.retrying { zk =>
-        val result = new ChildrenCallbackPromise(ZNode.this)
+        val result = new AsyncCallbackPromise.Children(ZNode.this)
         val update = new EventPromise
         zk.getChildren(path, update, result, null)
         result.future map { c => ZNode.Watch(Try(c), update.future) } // should handle KeeperException.NoNodeException
@@ -114,14 +114,14 @@ trait ZNode extends Paths {
 
     def apply()(implicit ec: ExecutionContext): Future[ZNode.Data] =
       keeper.retrying { zk =>
-        val result = new DataCallbackPromise(ZNode.this)
+        val result = new AsyncCallbackPromise.Data(ZNode.this)
         zk.getData(path, false, result, null)
         result.future
       }
 
-    def watch()(implicit ec: ExecutionContext) =
+    def watch()(implicit ec: ExecutionContext): Future[ZNode.Watch[ZNode.Data]] =
       keeper.retrying { zk =>
-        val result = new DataCallbackPromise(ZNode.this)
+        val result = new AsyncCallbackPromise.Data(ZNode.this)
         val update = new EventPromise
         zk.getData(path, update, result, null)
         result.future map { d => ZNode.Watch(Try(d), update.future) } // should handle KeeperException.NoNodeException
@@ -130,17 +130,17 @@ trait ZNode extends Paths {
 
   val exists: ZOp[ZNode.Exists] = new ZOp[ZNode.Exists] {
 
-    def apply()(implicit ec: ExecutionContext) =
+    def apply()(implicit ec: ExecutionContext): Future[ZNode.Exists] =
       keeper.retrying { zk =>
-        val result = new ExistsCallbackPromise(ZNode.this)
+        val result = new AsyncCallbackPromise.Exists(ZNode.this)
         zk.exists(path, false, result, null)
         result.future
       }
 
     /** Get this node's metadata and watch for updates */
-    def watch()(implicit e: ExecutionContext) =
+    def watch()(implicit e: ExecutionContext): Future[ZNode.Watch[ZNode.Exists]] =
       keeper.retrying { zk =>
-        val result = new ExistsCallbackPromise(ZNode.this)
+        val result = new AsyncCallbackPromise.Exists(ZNode.this)
         val update = new EventPromise
         zk.exists(path, update, result, null)
         result.future.map { e => ZNode.Watch(Try(e), update.future) } // should handle KeeperException.NoNodeException
