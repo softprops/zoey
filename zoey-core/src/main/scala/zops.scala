@@ -1,6 +1,7 @@
 package zoey
 
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.Try
 
 trait ZOp[T <: ZNode.Exists] {
 
@@ -8,17 +9,15 @@ trait ZOp[T <: ZNode.Exists] {
 
   def watch()(implicit ec: ExecutionContext): Future[ZNode.Watch[T]]
 
-  /*def monitor(): Offer[Try[T]] = {
-    val broker = new Broker[Try[T]]
-    // Set the watch, send the result to the broker, and repeat this when an event occurs
-    def setWatch() {
-      watch() onSuccess { case ZNode.Watch(result, update) =>
-        broker ! result onSuccess { _ =>
-          update onSuccess { _ => setWatch() }
+  def monitor[A](f: Try[T] => A)(implicit ec: ExecutionContext): Unit = {
+    def watchit(): Unit = {
+      watch().foreach { case ZNode.Watch(result, update) =>
+        result.foreach { _ =>
+          update.foreach { _ => watchit() }
         }
+        f(result)
       }
     }
-    setWatch()
-    broker.recv
-  }*/
+    watchit()
+  }
 }
