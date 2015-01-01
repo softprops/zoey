@@ -7,7 +7,9 @@ object Publishing {
   def settings = Seq(
     licenses in ThisBuild := Seq(("MIT", url(s"https://github.com/softprops/zoey/blob/${version.value}/LICENSE"))),
     publishArtifact in Test := false,
+    homepage in ThisBuild := Some(url("https://github.com/softprops/zoey")),
     pomExtra in ThisBuild := (
+
       <scm>
         <url>git@github.com:softprops/zoey.git</url>
         <connection>scm:git:git@github.com:softprops/zoey.git</connection>
@@ -18,7 +20,8 @@ object Publishing {
         <name>Doug Tangren</name>
         <url>https://github.com/softprops</url>
       </developer>
-      </developers>)
+      </developers>
+      <url>https://github.com/softprops/zoey</url>)
   ) ++ bintraySettings ++ lsSettings ++ Seq(
     bintray.Keys.packageLabels in bintray.Keys.bintray := Seq("zookeeper", "distributed-systems"),
     ls.Plugin.LsKeys.tags in ls.Plugin.LsKeys.lsync := (bintray.Keys.packageLabels in bintray.Keys.bintray).value,

@@ -10,14 +10,14 @@ trait ZOp[T <: ZNode.Exists] {
   def watch()(implicit ec: ExecutionContext): Future[ZNode.Watch[T]]
 
   def monitor[A](f: Try[T] => A)(implicit ec: ExecutionContext): Unit = {
-    def watchit(): Unit = {
+    def loop(): Unit = {
       watch().foreach { case ZNode.Watch(result, update) =>
         result.foreach { _ =>
-          update.foreach { _ => watchit() }
+          update.foreach { _ => loop() }
         }
         f(result)
       }
     }
-    watchit()
+    loop()
   }
 }
