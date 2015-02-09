@@ -1,0 +1,13 @@
+## fixes
+
+* `zoey-test` artifact is now a test dependency of `zoey-core` (as it was previously intended to be)
+
+## enhancements
+
+* More forgiving path appending functions.
+* You can now `monitor` changes applied to a given operation. The difference between `montioring` and `watching` for changes
+is that monitoring doesn't to require a re-registration. 
+
+
+
+
