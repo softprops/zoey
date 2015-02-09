@@ -33,13 +33,13 @@ trait ZNode extends Paths {
 
   /** creates the current znode reference if it does not exist */
   def create(
-    data: Array[Byte] = Array.empty[Byte],
-    acls: Seq[ACL]    = keeper.acl,
-    mode: CreateMode  = keeper.mode,
+    data: Array[Byte]     = Array.empty[Byte],
+    acls: Seq[ACL]        = keeper.acl,
+    mode: CreateMode      = keeper.mode,
     child: Option[String] = None,
     parent: Boolean = false)
    (implicit ec: ExecutionContext): Future[ZNode] = {
-    val newPath = child.map(childPath).getOrElse(path)
+    val newPath = child.fold(path)(childPath)
     keeper.retrying { zk =>
       val result = new AsyncCallbackPromise.Str
       zk.create(newPath, data, acls.asJava, mode, result, null)
