@@ -17,6 +17,6 @@ publishArtifact := false
 
 publish := {}
 
-lazy val `zoey-core` = project.dependsOn(`zoey-testing` % "test->test;compile->compile")
+lazy val `zoey-core` = project.dependsOn(`zoey-testing` % "test->compile")
 
 lazy val `zoey-testing` = project
