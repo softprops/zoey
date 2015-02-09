@@ -19,8 +19,7 @@ object Publishing {
         <name>Doug Tangren</name>
         <url>https://github.com/softprops</url>
       </developer>
-      </developers>
-      <url>https://github.com/softprops/zoey</url>)
+      </developers>)
   ) ++ bintraySettings ++ lsSettings ++ Seq(
     bintray.Keys.packageLabels in bintray.Keys.bintray := Seq("zookeeper", "distributed-systems"),
     ls.Plugin.LsKeys.tags in ls.Plugin.LsKeys.lsync := (bintray.Keys.packageLabels in bintray.Keys.bintray).value,
