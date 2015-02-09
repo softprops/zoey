@@ -31,7 +31,7 @@ add the following to your sbt build definition
 ```scala
 resolvers += "softprops-maven" at "http://dl.bintray.com/content/softprops/maven"
 
-libraryDependencies += "me.lessis" %% "zoey-core" % "0.1.1"
+libraryDependencies += "me.lessis" %% "zoey-core" % "0.1.2"
 ```
 
 ## usage
