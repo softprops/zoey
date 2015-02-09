@@ -9,7 +9,6 @@ object Publishing {
     publishArtifact in Test := false,
     homepage in ThisBuild := Some(url("https://github.com/softprops/zoey")),
     pomExtra in ThisBuild := (
-
       <scm>
         <url>git@github.com:softprops/zoey.git</url>
         <connection>scm:git:git@github.com:softprops/zoey.git</connection>
