@@ -6,7 +6,7 @@
 
 * More forgiving path appending functions.
 * You can now `monitor` changes applied to a given operation. The difference between `montioring` and `watching` for changes
-is that monitoring doesn't to require a re-registration. 
+is that monitoring doesn't require a re-registration.
 
 
 
